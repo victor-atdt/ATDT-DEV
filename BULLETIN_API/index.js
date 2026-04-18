@@ -1,0 +1,31 @@
+const express = require('express');
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
+const bulletinRoutes = require('./routes/bulletin.routes');
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'API de Bulletin',
+      version: '1.0.0',
+      description: 'Documentación de la API de Bulletin con PostgreSQL',
+    },
+    servers: [{ url: `http://localhost:${PORT}` }],
+  },
+  apis: ['./routes/*.js'], // 👈 ahora apunta a las rutas
+};
+
+const swaggerDocs = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
+app.use(express.json());
+app.use('/', bulletinRoutes);
+
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`Documentación en http://localhost:${PORT}/api-docs`);
+});

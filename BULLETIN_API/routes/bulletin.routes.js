@@ -1,4 +1,6 @@
-const { Router } = require('express');
+const express = require('express');
+const router = express.Router();
+const { verifyToken } = require('../middleware/auth.middleware'); // 👈 importa el middleware
 const {
   getBulletins,
   updateBulletin,
@@ -9,8 +11,6 @@ const {
   createBulletinResources
 } = require('../controllers/bulletin.controller');
 
-const router = Router();
-
 /**
  * @openapi
  * /bulletins:
@@ -19,6 +19,8 @@ const router = Router();
  *     description: Retrieves one or all bulletins from the database via the FNS_BULLETINS function.
  *     tags:
  *       - Bulletins
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: bull_id
@@ -31,7 +33,7 @@ const router = Router();
  *       '200':
  *         description: List of bulletins retrieved successfully
  */
-router.get('/bulletins', getBulletins);
+router.get('/bulletins', verifyToken, getBulletins);
 
 /**
  * @openapi

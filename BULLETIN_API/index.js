@@ -2,6 +2,7 @@ const express = require('express');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const bulletinRoutes = require('./routes/bulletin.routes');
+const authRoutes = require('./routes/auth.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -15,6 +16,16 @@ const swaggerOptions = {
       description: 'Documentación de la API de Bulletin con PostgreSQL',
     },
     servers: [{ url: `http://localhost:${PORT}` }],
+    //agregar el esquema de seguridad para Swagger UI
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
   },
   apis: ['./routes/*.js'], // 👈 ahora apunta a las rutas
 };
@@ -23,6 +34,7 @@ const swaggerDocs = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 app.use(express.json());
+app.use('/', authRoutes);
 app.use('/', bulletinRoutes);
 
 app.listen(PORT, () => {

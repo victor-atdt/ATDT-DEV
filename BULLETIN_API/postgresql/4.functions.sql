@@ -10,6 +10,28 @@ $$ LANGUAGE plpgsql;
 -- =============================================
 -- FUNCIÓN: FNS_BULL_SECTIONS
 -- =============================================
+CREATE OR REPLACE FUNCTION "db_Sirel".FNS_BULL_SECTIONS(p_bull_id INTEGER)
+RETURNS SETOF "db_Sirel".section_result_type 
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT S.section_id
+		, S.section_segment
+		, S.section_subsegment
+		, S.bull_id
+		, S.resource_id
+		, P.path_desc
+		, S.section_order
+		, S.section_content
+		, S.section_css
+		, S.section_htmltag
+		, S.section_status
+    FROM "db_Sirel".bulletin_sections S
+    LEFT JOIN "db_Sirel".bulletin_path P ON S.resource_id = P.resource_id
+    WHERE S.bull_id = p_bull_id;
+END;
+$$;
 COMMENT ON FUNCTION "db_Sirel".FNS_BULL_SECTIONS(INTEGER) IS 
 'CONSULTA: Retorna todas las secciones asociadas a un boletín específico.
 
@@ -34,57 +56,7 @@ COMMENT ON FUNCTION "db_Sirel".FNS_BULL_SECTIONS(INTEGER) IS
 
  EJEMPLO DE USO:
    SELECT * FROM "db_Sirel".FNS_BULL_SECTIONS(1);';
- 
-CREATE OR REPLACE FUNCTION "db_Sirel".FNS_BULL_SECTIONS(p_bull_id INTEGER)
-RETURNS SETOF "db_Sirel".section_result_type 
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    RETURN QUERY
-    SELECT S.section_id
-		, S.section_segment
-		, S.section_subsegment
-		, S.bull_id
-		, S.resource_id
-		, P.path_desc
-		, S.section_order
-		, S.section_content
-		, S.section_css
-		, S.section_htmltag
-		, S.section_status
-    FROM "db_Sirel".bulletin_sections S
-    LEFT JOIN "db_Sirel".bulletin_path P ON S.resource_id = P.resource_id
-    WHERE S.bull_id = p_bull_id;
-END;
-$$;
 
-COMMENT ON FUNCTION "db_Sirel".FNS_BULLETINS(INTEGER) IS 
-'CONSULTA: Retorna la información de uno o todos los boletines registrados.
-
- PARÁMETROS:
-   - p_bull_id (INTEGER, opcional): Identificador del boletín a consultar.
-     Si se omite o se pasa NULL, retorna todos los boletines.
-
- RETORNA:
-   TABLE con los campos de la tabla bulletin:
-   - bull_id: Identificador único del boletín.
-   - bull_name: Nombre completo del boletín.
-   - bull_acronym: Acrónimo único del boletín.
-   - bull_desc: Descripción del boletín.
-   - bull_img_path: Ruta o URL de la imagen del boletín.
-   - bull_active_ini / bull_active_end: Rango de fechas de vigencia.
-   - bull_status: Estado activo/inactivo del boletín.
-   - updated_by / updated_at: Datos de auditoría de última modificación.
-
- TABLAS QUE CONSULTA:
-   - bulletin: Fuente principal de los boletines.
-
- EJEMPLOS DE USO:
-   -- Obtener todos los boletines
-   SELECT * FROM "db_Sirel".FNS_BULLETINS();
-
-   -- Obtener un boletín específico
-   SELECT * FROM "db_Sirel".FNS_BULLETINS(3);';
 CREATE OR REPLACE FUNCTION "db_Sirel".FNS_BULLETINS(p_bull_id INTEGER DEFAULT NULL)
 RETURNS TABLE (
     bull_id integer,
@@ -117,10 +89,55 @@ BEGIN
 	WHERE (p_bull_id IS NULL OR b.bull_id = p_bull_id);
 END;
 $$;
+COMMENT ON FUNCTION "db_Sirel".FNS_BULLETINS(INTEGER) IS 
+'CONSULTA: Retorna la información de uno o todos los boletines registrados.
+
+ PARÁMETROS:
+   - p_bull_id (INTEGER, opcional): Identificador del boletín a consultar.
+     Si se omite o se pasa NULL, retorna todos los boletines.
+
+ RETORNA:
+   TABLE con los campos de la tabla bulletin:
+   - bull_id: Identificador único del boletín.
+   - bull_name: Nombre completo del boletín.
+   - bull_acronym: Acrónimo único del boletín.
+   - bull_desc: Descripción del boletín.
+   - bull_img_path: Ruta o URL de la imagen del boletín.
+   - bull_active_ini / bull_active_end: Rango de fechas de vigencia.
+   - bull_status: Estado activo/inactivo del boletín.
+   - updated_by / updated_at: Datos de auditoría de última modificación.
+
+ TABLAS QUE CONSULTA:
+   - bulletin: Fuente principal de los boletines.
+
+ EJEMPLOS DE USO:
+   -- Obtener todos los boletines
+   SELECT * FROM "db_Sirel".FNS_BULLETINS();
+
+   -- Obtener un boletín específico
+   SELECT * FROM "db_Sirel".FNS_BULLETINS(3);';
 
 -- =============================================
 -- FUNCIÓN: FNI_BULLETIN_RESOURCES
 -- =============================================
+
+CREATE OR REPLACE FUNCTION "db_Sirel".FNI_BULLETIN_RESOURCES(p_data JSONB)
+RETURNS TABLE(resource_id INTEGER) 
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    INSERT INTO "db_Sirel".bulletin_resource (
+       resource_desc
+    )
+    SELECT 
+        resource_desc
+    FROM jsonb_to_recordset(p_data) AS x(
+        resource_desc TEXT
+    )
+    RETURNING "db_Sirel".bulletin_resource.resource_id;
+END;
+$$;
 COMMENT ON FUNCTION "db_Sirel".FNI_BULLETIN_RESOURCES(JSONB) IS 
 'INSERCIÓN: Inserta uno o múltiples recursos en la tabla bulletin_resource
  a partir de un arreglo JSON, retornando los IDs generados.
@@ -149,23 +166,5 @@ COMMENT ON FUNCTION "db_Sirel".FNI_BULLETIN_RESOURCES(JSONB) IS
    SELECT * FROM "db_Sirel".FNI_BULLETIN_RESOURCES(
      ''[{"resource_desc": "Imagen principal"}, {"resource_desc": "Archivo PDF"}]''::JSONB
    );';
-CREATE OR REPLACE FUNCTION "db_Sirel".FNI_BULLETIN_RESOURCES(p_data JSONB)
-RETURNS TABLE(resource_id INTEGER) 
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    RETURN QUERY
-    INSERT INTO "db_Sirel".bulletin_resource (
-       resource_desc
-    )
-    SELECT 
-        resource_desc
-    FROM jsonb_to_recordset(p_data) AS x(
-        resource_desc TEXT
-    )
-    RETURNING "db_Sirel".bulletin_resource.resource_id;
-END;
-$$;
-
 
 

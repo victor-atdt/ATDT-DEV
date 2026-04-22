@@ -1,5 +1,5 @@
 -- 1. Crear la tabla
-CREATE IF NOT EXISTS TABLE "db_Sirel".users (
+CREATE TABLE IF NOT EXISTS "db_Sirel".users (
   id SERIAL PRIMARY KEY,
   username VARCHAR(100) UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,

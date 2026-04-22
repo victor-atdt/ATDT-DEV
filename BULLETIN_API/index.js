@@ -1,3 +1,4 @@
+const cors = require('cors');
 const express = require('express');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
@@ -5,7 +6,14 @@ const bulletinRoutes = require('./routes/bulletin.routes');
 const authRoutes = require('./routes/auth.routes');
 
 const app = express();
+
 const PORT = process.env.PORT || 3001;
+
+app.use(cors({
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Authorization', 'Content-Type'],
+}));
 
 const swaggerOptions = {
   definition: {
@@ -31,9 +39,8 @@ const swaggerOptions = {
 };
 
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
-
 app.use(express.json());
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 app.use('/', authRoutes);
 app.use('/', bulletinRoutes);
 

@@ -14,6 +14,20 @@ const getBulletins = async (req, res) => {
   }
 };
 
+const getBulletinsByWord = async (req, res) => {
+  try {
+    const { keyword } = req.query;
+    const queryText = 'SELECT * FROM "db_Sirel".FNS_BULLETINES_BYWORD($1)';
+    const result = await pool.query(queryText, [keyword || null]);
+
+    console.log("Filas enviando al navegador:", result.rowCount);
+    return res.status(200).json(result.rows);
+  } catch (err) {
+    console.error("Error en la ruta /bulletins:", err);
+    return res.status(500).json({ error: "Error al obtener datos", message: err.message });
+  }
+};
+
 const updateBulletin = async (req, res) => {
   const { id } = req.params;
   const { bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini, bull_active_end, bull_status, updated_by } = req.body;
@@ -157,6 +171,7 @@ module.exports = {
   getBulletins,
   updateBulletin,
   createBulletin,
+  getBulletinsByWord,
   getBulletinSections,
   createBulletinSectionsBatch,
   createBulletinSectionsBatchSP,

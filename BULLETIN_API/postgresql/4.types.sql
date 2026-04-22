@@ -2,19 +2,25 @@
 -- =============================================
 -- TYPE: section_result_type
 -- =============================================
-CREATE TYPE "db_Sirel".section_result_type AS (
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'section_result_type') THEN
+    CREATE TYPE "db_Sirel".section_result_type AS (
     section_id INTEGER,
     section_segment INTEGER,
     section_subsegment INTEGER,
-	bull_id INTEGER,
+	  bull_id INTEGER,
     resource_id INTEGER,
-	path_desc TEXT,
+	  path_desc TEXT,
     section_order INTEGER,
     section_content TEXT,
     section_css INTEGER,
     section_htmltag CHAR VARYING(10),
     section_status BOOLEAN
-);
+	);
+
+    END IF;
+END $$;
 COMMENT ON TYPE "db_Sirel".section_result_type IS 
 'Tipo de dato compuesto utilizado como estructura de retorno de la función FNS_BULL_SECTIONS.
  Define los campos que conforman una sección de boletín enriquecida con información del recurso asociado.

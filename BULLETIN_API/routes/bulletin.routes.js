@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { verifyToken } = require('../middleware/auth.middleware'); // 👈 importa el middleware
+const { verifyToken } = require('../middleware/auth.middleware'); 
 const {
   getBulletins,
   updateBulletin,
   createBulletin,
+  getBulletinsByWord,
   getBulletinSections,
   createBulletinSectionsBatch,
   createBulletinSectionsBatchSP,
@@ -42,6 +43,8 @@ router.get('/bulletins', verifyToken, getBulletins);
  *     summary: Actualiza parcialmente un boletín
  *     tags:
  *       - Bulletins
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -80,7 +83,7 @@ router.get('/bulletins', verifyToken, getBulletins);
  *       500:
  *         description: Error en el servidor
  */
-router.patch('/bulletins/:id', updateBulletin);
+router.patch('/bulletins/:id', verifyToken, updateBulletin);
 
 /**
  * @openapi
@@ -126,7 +129,30 @@ router.patch('/bulletins/:id', updateBulletin);
  *       500:
  *         description: Error en el servidor
  */
-router.post('/bulletin', createBulletin);
+router.post('/bulletin', verifyToken, createBulletin);
+/**
+ * @openapi
+ * /bulletins/search/{keyword}:
+ *   get:
+ *     summary: Get bulletins by keyword
+ *     description: Retrieves one or all bulletins from the database via the FNS_BULLETINES_BYWORD function.
+ *     tags:
+ *       - Bulletins
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: keyword
+ *         required: false
+ *         schema:
+ *           type: text
+ *           example: 'keyword'
+ *         description: Bulletin keyword to filter.
+ *     responses:
+ *       '200':
+ *         description: List of bulletins retrieved successfully
+ */
+router.get('/bulletins/search/:keyword', verifyToken, getBulletinsByWord)
 
 /**
  * @openapi
@@ -150,7 +176,7 @@ router.post('/bulletin', createBulletin);
  *       500:
  *         description: Error en el servidor
  */
-router.get('/bulletin/sections/:id', getBulletinSections);
+router.get('/bulletin/sections/:id', verifyToken, getBulletinSections);
 
 /**
  * @openapi
@@ -211,7 +237,7 @@ router.get('/bulletin/sections/:id', getBulletinSections);
  *       500:
  *         description: Error al guardar en la base de datos
  */
-router.post('/bulletin/sections/batch', createBulletinSectionsBatch);
+router.post('/bulletin/sections/batch', verifyToken, createBulletinSectionsBatch);
 
 /**
  * @openapi
@@ -272,7 +298,7 @@ router.post('/bulletin/sections/batch', createBulletinSectionsBatch);
  *       500:
  *         description: Error en la ejecución del procedimiento
  */
-router.post('/bulletin/sections/batch-sp', createBulletinSectionsBatchSP);
+router.post('/bulletin/sections/batch-sp', verifyToken, createBulletinSectionsBatchSP);
 
 /**
  * @openapi
@@ -298,6 +324,6 @@ router.post('/bulletin/sections/batch-sp', createBulletinSectionsBatchSP);
  *       500:
  *         description: Error interno del servidor
  */
-router.post('/bulletin-resources', createBulletinResources);
+router.post('/bulletin-resources', verifyToken, createBulletinResources);
 
 module.exports = router;

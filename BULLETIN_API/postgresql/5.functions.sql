@@ -57,7 +57,7 @@ COMMENT ON FUNCTION "db_Sirel".FNS_BULL_SECTIONS(INTEGER) IS
  EJEMPLO DE USO:
    SELECT * FROM "db_Sirel".FNS_BULL_SECTIONS(1);';
 
-CREATE OR REPLACE FUNCTION "db_Sirel".FNS_BULLETINS(p_bull_id INTEGER DEFAULT NULL)
+CREATE OR REPLACE FUNCTION "db_Sirel".FNS_BULLETINS(p_bull_id INTEGER DEFAULT NULL, p_bull_status BOOLEAN DEFAULT NULL)
 RETURNS TABLE (
     bull_id integer,
     bull_name character varying(100),
@@ -86,16 +86,19 @@ BEGIN
         b.updated_by, 
         b.updated_at
     FROM "db_Sirel"."bulletin" b
-	WHERE (p_bull_id IS NULL OR b.bull_id = p_bull_id);
+	WHERE (p_bull_id IS NULL OR b.bull_id = p_bull_id)
+    AND (p_bull_status IS NULL OR b.bull_status = p_bull_status)
+    ORDER BY b.bull_id;
 END;
 $$;
 COMMENT ON FUNCTION "db_Sirel".FNS_BULLETINS(INTEGER) IS 
-'CONSULTA: Retorna la información de uno o todos los boletines registrados.
+'CONSULTA: Retorna la información de uno o todos los boletines registrados según estado activos = true, todos = NULL.
 
  PARÁMETROS:
    - p_bull_id (INTEGER, opcional): Identificador del boletín a consultar.
      Si se omite o se pasa NULL, retorna todos los boletines.
-
+   - p_bull_status (BOOLEAN, opcional): Todos o activos o inactivos
+     Si se omite o se pasa NULL, retorna todos los boletines.
  RETORNA:
    TABLE con los campos de la tabla bulletin:
    - bull_id: Identificador único del boletín.
@@ -112,10 +115,10 @@ COMMENT ON FUNCTION "db_Sirel".FNS_BULLETINS(INTEGER) IS
 
  EJEMPLOS DE USO:
    -- Obtener todos los boletines
-   SELECT * FROM "db_Sirel".FNS_BULLETINS();
+   SELECT * FROM "db_Sirel".FNS_BULLETINS(null,null
 
    -- Obtener un boletín específico
-   SELECT * FROM "db_Sirel".FNS_BULLETINS(3);';
+   SELECT * FROM "db_Sirel".FNS_BULLETINS(3,true);';
 
 -- =============================================
 -- FUNCIÓN: FNI_BULLETIN_RESOURCES
@@ -203,6 +206,8 @@ LEFT JOIN "db_Sirel".bulletin_sections bs on b.bull_id = bs.bull_id
 	WHERE (unaccent(lower(b.bull_desc)) like '%' || unaccent(lower(keyword)) || '%')
 	   OR (unaccent(lower(b.bull_name)) like '%' || unaccent(lower(keyword)) || '%')
 	   OR (unaccent(lower(bs.section_content)) like '%' || unaccent(lower(keyword)) || '%');
+    group by b.bull_id
+		order by b.bull_id;
 END;
 $$;
 COMMENT ON FUNCTION "db_Sirel".FNS_BULLETINES_BYWORD(character varying) IS 
@@ -264,13 +269,123 @@ BEGIN
     RETURN QUERY SELECT p_bull_id;
 END;
 $BODY$;
+CREATE OR REPLACE FUNCTION "db_Sirel".FNI_BULLETIN_SECTIONS(
+    p_data JSON
+)
+RETURNS TABLE (
+    section_id      INTEGER,
+    section_segment INTEGER,
+    section_subsegment INTEGER,
+    bull_id         INTEGER,
+    status          TEXT,
+    mensaje         TEXT
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_item          JSON;
+    v_new_id        INTEGER;
+    v_segment       INTEGER;
+    v_subsegment    INTEGER;
+    v_bull_id       INTEGER;
+BEGIN
+    FOR v_item IN SELECT * FROM json_array_elements(p_data)
+    LOOP
+        BEGIN
+            v_bull_id    := (v_item->>'bull_id')::INTEGER;
+            v_segment    := COALESCE((v_item->>'section_segment')::INTEGER, 1);
+            v_subsegment := COALESCE((v_item->>'section_subsegment')::INTEGER, 0);
 
+            -- Generar section_id por bull_id
+            SELECT COALESCE(MAX(bs.section_id), 0) + 1
+            INTO v_new_id
+            FROM "db_Sirel".bulletin_sections bs
+            WHERE bs.bull_id = v_bull_id;
+
+            INSERT INTO "db_Sirel".bulletin_sections (
+                 section_id
+                ,section_segment
+                ,section_subsegment
+                ,bull_id
+                ,resource_id
+                ,section_order
+                ,section_content
+                ,section_css
+                ,section_htmltag
+                ,section_status
+                ,updated_by
+                ,updated_at
+            )
+            VALUES (
+                 v_new_id
+                ,v_segment
+                ,v_subsegment
+                ,v_bull_id
+                ,NULLIF(v_item->>'resource_id', '')::INTEGER
+                ,(v_item->>'section_order')::INTEGER
+                ,v_item->>'section_content'
+                ,COALESCE((v_item->>'section_css')::INTEGER, 0)
+                ,COALESCE(v_item->>'section_htmltag', 'p')
+                ,COALESCE((v_item->>'section_status')::BOOLEAN, TRUE)
+                ,COALESCE(v_item->>'updated_by', 'SISTEMA')
+                ,NOW()
+            );
+
+            -- Retornar fila exitosa
+            section_id         := v_new_id;
+            section_segment    := v_segment;
+            section_subsegment := v_subsegment;
+            bull_id            := v_bull_id;
+            status             := 'OK';
+            mensaje            := 'Registro insertado correctamente';
+            RETURN NEXT;
+
+        EXCEPTION
+            WHEN foreign_key_violation THEN
+                section_id         := NULL;
+                section_segment    := v_segment;
+                section_subsegment := v_subsegment;
+                bull_id            := v_bull_id;
+                status             := 'ERROR';
+                mensaje            := 'Clave foránea inválida: bull_id o resource_id no existe.';
+                RETURN NEXT;
+
+            WHEN unique_violation THEN
+                section_id         := NULL;
+                section_segment    := v_segment;
+                section_subsegment := v_subsegment;
+                bull_id            := v_bull_id;
+                status             := 'ERROR';
+                mensaje            := 'Registro duplicado: ya existe la misma clave primaria.';
+                RETURN NEXT;
+
+            WHEN OTHERS THEN
+                section_id         := NULL;
+                section_segment    := v_segment;
+                section_subsegment := v_subsegment;
+                bull_id            := v_bull_id;
+                status             := 'ERROR';
+                mensaje            := 'Error inesperado: ' || SQLERRM;
+                RETURN NEXT;
+        END;
+    END LOOP;
+
+    RETURN;
+END;
+$$;
+
+COMMENT ON FUNCTION "db_Sirel".FNI_BULLETIN_SECTIONS(JSON) IS
+'Función batch para inserción de secciones de boletines.
+Retorna una fila por cada ítem procesado indicando OK o ERROR.
+Campos requeridos: bull_id, section_content, section_order.';
+
+ 
 
 ALTER FUNCTION "db_Sirel".FNS_BULLETINS(p_bull_id INTEGER)
     OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".FNI_BULLETIN_RESOURCES(p_data JSONB)
     OWNER TO postgres;
-ALTER FUNCTION "db_Sirel".FNS_BULLETINS(p_bull_id INTEGER)
+ALTER FUNCTION "db_Sirel".FNI_BULLETIN_SECTIONS(p_data JSON)
     OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".FNS_BULLETINES_BYWORD(keyword character varying)
     OWNER TO postgres;

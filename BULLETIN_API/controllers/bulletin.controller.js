@@ -2,11 +2,10 @@ const { pool } = require('../db');
 
 const getBulletins = async (req, res) => {
   try {
-    const { bull_id } = req.query;
-    const queryText = 'SELECT * FROM "db_Sirel".FNS_BULLETINS($1)';
-    const result = await pool.query(queryText, [bull_id || null]);
+    const { id, status } = req.query;
+    const queryText = 'SELECT * FROM "db_Sirel".FNS_BULLETINS($1, $2)';
+    const result = await pool.query(queryText, [id || null, status || null]);
 
-    console.log("Filas enviando al navegador:", result.rowCount);
     return res.status(200).json(result.rows);
   } catch (err) {
     console.error("Error en la ruta /bulletins:", err);
@@ -17,6 +16,7 @@ const getBulletins = async (req, res) => {
 const getBulletinsByWord = async (req, res) => {
   try {
     const { keyword } = req.query;
+    console.log("keyword", keyword);
     const queryText = 'SELECT * FROM "db_Sirel".FNS_BULLETINES_BYWORD($1)';
     const result = await pool.query(queryText, [keyword || null]);
 
@@ -60,16 +60,16 @@ const updateBulletin = async (req, res) => {
 };
 
 const createBulletin = async (req, res) => {
-  const { bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini, bull_active_end, bull_status } = req.body;
+  const { bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini, bull_active_end, bull_status, updated_by } = req.body;
 
   const queryText = `
-    INSERT INTO "db_Sirel".bulletin (bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini, bull_active_end, bull_status) 
-    VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, true)) 
+    INSERT INTO "db_Sirel".bulletin (bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini, bull_active_end, bull_status, updated_by) 
+    VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, true), $8) 
     RETURNING *;
   `;
 
   try {
-    const result = await pool.query(queryText, [bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini || null, bull_active_end || null, bull_status]);
+    const result = await pool.query(queryText, [bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini || null, bull_active_end || null, bull_status, updated_by]);
     return res.status(201).json({ mensaje: "Boletín creado con éxito", info: result.rows[0] });
   } catch (err) {
     console.error("Error al insertar boletín:", err);
@@ -148,7 +148,7 @@ const createBulletinSectionsBatchSP = async (req, res) => {
   }
 
   try {
-    await pool.query('CALL "db_Sirel".SPI_BULLETIN_SECTIONS($1)', [JSON.stringify(data)]);
+    await pool.query('SELECT * FROM "db_Sirel".FNI_BULLETIN_SECTIONS($1)', [JSON.stringify(data)]);
     return res.status(201).json({ mensaje: "Procedimiento ejecutado correctamente", registros_procesados: data.length });
   } catch (err) {
     console.error("Error al ejecutar SPI_BULLETIN_SECTIONS:", err);

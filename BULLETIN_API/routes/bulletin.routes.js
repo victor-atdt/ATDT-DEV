@@ -14,7 +14,31 @@ const {
 
 /**
  * @openapi
- * /bulletins:
+ * /bulletins/search/{keyword}:
+ *   get:
+ *     summary: Get bulletins by keyword
+ *     description: Retrieves one or all bulletins from the database via the FNS_BULLETINES_BYWORD function.
+ *     tags:
+ *       - Bulletins
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: keyword
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: 'keyword'
+ *         description: Bulletin keyword to filter.
+ *     responses:
+ *       '200':
+ *         description: List of bulletins retrieved successfully
+ */
+router.get('/bulletins/search/:keyword', verifyToken, getBulletinsByWord)
+
+/**
+ * @openapi
+ * /bulletins/{id}/{status}:
  *   get:
  *     summary: Get bulletins
  *     description: Retrieves one or all bulletins from the database via the FNS_BULLETINS function.
@@ -24,23 +48,30 @@ const {
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
- *         name: bull_id
+ *         name: id
  *         required: false
  *         schema:
  *           type: integer
  *           example: 1
  *         description: Bulletin ID to filter. If omitted, returns all bulletins.
+ *       - in: query
+ *         name: status
+ *         required: false
+ *         schema:
+ *           type: boolean
+ *           example: true
+ *         description: Bulletin ID to filter, if ommited returns all bulletins otherwise returns active or inactive bulletins.
  *     responses:
  *       '200':
  *         description: List of bulletins retrieved successfully
  */
-router.get('/bulletins', verifyToken, getBulletins);
+router.get('/bulletins/:id/:status', verifyToken, getBulletins);
 
 /**
  * @openapi
  * /bulletins/{id}:
  *   patch:
- *     summary: Actualiza parcialmente un boletín
+ *     summary: Update all or part of a bulletin
  *     tags:
  *       - Bulletins
  *     security:
@@ -89,9 +120,11 @@ router.patch('/bulletins/:id', verifyToken, updateBulletin);
  * @openapi
  * /bulletin:
  *   post:
- *     summary: Crea un nuevo boletín
+ *     summary: Creates a bulletin
  *     tags:
  *       - Bulletins
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -121,6 +154,9 @@ router.patch('/bulletins/:id', verifyToken, updateBulletin);
  *               bull_status:
  *                 type: boolean
  *                 default: true
+ *               updated_by:
+ *                 type: string
+ *                 default: 'API_USER'
  *     responses:
  *       201:
  *         description: Boletín creado exitosamente
@@ -130,37 +166,16 @@ router.patch('/bulletins/:id', verifyToken, updateBulletin);
  *         description: Error en el servidor
  */
 router.post('/bulletin', verifyToken, createBulletin);
-/**
- * @openapi
- * /bulletins/search/{keyword}:
- *   get:
- *     summary: Get bulletins by keyword
- *     description: Retrieves one or all bulletins from the database via the FNS_BULLETINES_BYWORD function.
- *     tags:
- *       - Bulletins
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: keyword
- *         required: false
- *         schema:
- *           type: text
- *           example: 'keyword'
- *         description: Bulletin keyword to filter.
- *     responses:
- *       '200':
- *         description: List of bulletins retrieved successfully
- */
-router.get('/bulletins/search/:keyword', verifyToken, getBulletinsByWord)
 
 /**
  * @openapi
  * /bulletin/sections/{id}:
  *   get:
- *     summary: Obtiene las secciones de un boletín
+ *     summary: Get bulletin sections
  *     tags:
  *       - Sections
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -182,9 +197,11 @@ router.get('/bulletin/sections/:id', verifyToken, getBulletinSections);
  * @openapi
  * /bulletin/sections/batch:
  *   post:
- *     summary: Guarda múltiples secciones de un boletín
+ *     summary: Save bulletin sections
  *     tags:
  *       - Sections
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -243,9 +260,11 @@ router.post('/bulletin/sections/batch', verifyToken, createBulletinSectionsBatch
  * @openapi
  * /bulletin/sections/batch-sp:
  *   post:
- *     summary: Guarda múltiples secciones usando un procedimiento almacenado
+ *     summary: Save bulltin sections in batch mode
  *     tags:
  *       - Sections
+ *     security:
+ *       - bearerAuth: [] 
  *     requestBody:
  *       required: true
  *       content:
@@ -307,6 +326,8 @@ router.post('/bulletin/sections/batch-sp', verifyToken, createBulletinSectionsBa
  *     summary: Inserta múltiples recursos de boletín
  *     tags:
  *       - Resources
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:

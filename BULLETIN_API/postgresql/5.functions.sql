@@ -28,7 +28,7 @@ BEGIN
 		, S.section_htmltag
 		, S.section_status
     FROM "db_Sirel".bulletin_sections S
-    LEFT JOIN "db_Sirel".bulletin_path P ON S.resource_id = P.resource_id
+    LEFT JOIN "db_Sirel".bulletin_resource P ON S.resource_id = P.resource_id
     WHERE S.bull_id = p_bull_id;
 END;
 $$;
@@ -387,6 +387,8 @@ ALTER FUNCTION "db_Sirel".FNI_BULLETIN_RESOURCES(p_data JSONB)
     OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".FNI_BULLETIN_SECTIONS(p_data JSON)
     OWNER TO postgres;
+ALTER FUNCTION "db_Sirel".FNS_BULL_SECTIONS(p_data JSON)
+OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".FNS_BULLETINES_BYWORD(keyword character varying)
     OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".fnu_bulletin(integer, character varying, character varying, text, text, date, date, boolean, character varying)

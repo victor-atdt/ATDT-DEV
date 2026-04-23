@@ -227,7 +227,7 @@ router.get('/bulletin/sections/:id', verifyToken, getBulletinSections);
  *                       type: integer
  *                     bull_id:
  *                       type: integer
- *                     path_id:
+ *                     resource_id:
  *                       type: integer
  *                       nullable: true
  *                     section_order:
@@ -290,7 +290,7 @@ router.post('/bulletin/sections/batch', verifyToken, createBulletinSectionsBatch
  *                       type: integer
  *                     bull_id:
  *                       type: integer
- *                     path_id:
+ *                     resource_id:
  *                       type: integer
  *                       nullable: true
  *                     section_order:

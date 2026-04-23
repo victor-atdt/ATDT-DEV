@@ -108,14 +108,14 @@ const createBulletinSectionsBatch = async (req, res) => {
 
     const queryText = `
       INSERT INTO "db_Sirel".bulletin_sections (
-        section_segment, section_subsegment, bull_id, path_id,
+        section_segment, section_subsegment, bull_id, resource_id,
         section_order, section_content, section_css, section_htmltag, section_status
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     `;
 
     for (const item of data) {
       await pool.query(queryText, [
-        item.section_segment, item.section_subsegment, item.bull_id, item.path_id,
+        item.section_segment, item.section_subsegment, item.bull_id, item.resource_id,
         item.section_order, item.section_content, item.section_css, item.section_htmltag, item.section_status
       ]);
     }
@@ -125,7 +125,7 @@ const createBulletinSectionsBatch = async (req, res) => {
   } catch (err) {
     await pool.query('ROLLBACK');
     console.error("Error en inserción masiva:", err);
-    return res.status(500).json({ error: "Error al procesar el guardado masivo" });
+    return res.status(500).json({ error: err.message + "Error al procesar el guardado masivo" });
   }
 };
 

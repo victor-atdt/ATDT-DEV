@@ -21,7 +21,7 @@ BEGIN
 		, S.section_subsegment
 		, S.bull_id
 		, S.resource_id
-		, P.path_desc
+		, P.resource_desc
 		, S.section_order
 		, S.section_content
 		, S.section_css

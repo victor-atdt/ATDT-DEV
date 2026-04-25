@@ -62,14 +62,13 @@ const updateBulletin = async (req, res) => {
 const createBulletin = async (req, res) => {
   const { bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini, bull_active_end, bull_status, updated_by } = req.body;
 
-  const queryText = `
-    INSERT INTO "db_Sirel".bulletin (bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini, bull_active_end, bull_status, updated_by) 
-    VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, true), $8) 
-    RETURNING *;
-  `;
-
+  const queryText = `SELECT * FROM "db_Sirel".FNI_BULLETIN($1, $2, $3, $4, $5, $6, COALESCE($7, true), $8)`;
   try {
-    const result = await pool.query(queryText, [bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini || null, bull_active_end || null, bull_status, updated_by]);
+    const result = await pool.query(queryText, [
+      bull_name, bull_acronym, bull_desc, bull_img_path,
+      bull_active_ini || null, bull_active_end || null,
+      bull_status, updated_by
+    ]);
     return res.status(201).json({ mensaje: "Boletín creado con éxito", info: result.rows[0] });
   } catch (err) {
     console.error("Error al insertar boletín:", err);
@@ -78,12 +77,12 @@ const createBulletin = async (req, res) => {
     }
     return res.status(500).json({ error: "Error al guardar en la base de datos", details: err.message });
   }
-};
 
+};
 const getBulletinSections = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('SELECT * FROM "db_Sirel".FN_BULL_SECTIONS($1)', [id]);
+    const result = await pool.query('SELECT * FROM "db_Sirel".FNS_BULL_SECTIONS($1)', [id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ mensaje: "No se encontraron secciones para este boletín" });
@@ -91,7 +90,7 @@ const getBulletinSections = async (req, res) => {
 
     return res.json({ data: result.rows });
   } catch (err) {
-    console.error("Error al ejecutar FN_BULL_SECTIONS:", err);
+    console.error("Error al ejecutar FNS_BULL_SECTIONS:", err);
     return res.status(500).json({ error: "Error interno al consultar las secciones" });
   }
 };
@@ -105,18 +104,19 @@ const createBulletinSectionsBatch = async (req, res) => {
 
   try {
     await pool.query('BEGIN');
-
     const queryText = `
       INSERT INTO "db_Sirel".bulletin_sections (
-        section_segment, section_subsegment, bull_id, resource_id,
-        section_order, section_content, section_css, section_htmltag, section_status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        section_segment, section_subsegment, section_subsegment_num, bull_id, resource_id,
+        section_order, section_content, section_format, section_css, section_htmltag, 
+        section_status, updated_by
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     `;
 
     for (const item of data) {
       await pool.query(queryText, [
-        item.section_segment, item.section_subsegment, item.bull_id, item.resource_id,
-        item.section_order, item.section_content, item.section_css, item.section_htmltag, item.section_status
+        item.section_segment, item.section_subsegment, item.section_subsegment_num, item.bull_id, item.resource_id,
+        item.section_order, item.section_content, item.section_format, item.section_css, item.section_htmltag,
+        item.section_status, item.updated_by
       ]);
     }
 

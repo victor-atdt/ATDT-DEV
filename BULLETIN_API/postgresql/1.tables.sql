@@ -1,7 +1,5 @@
-
 -- =============================================
--- TABLA: bulletin_sections, almacena los datos de los boletines
--- DROP TABLE IF EXISTS "db_Sirel".bulletin;
+-- TABLA: bulletin, almacena los datos de los boletines
 -- =============================================
 CREATE TABLE IF NOT EXISTS "db_Sirel"."bulletin"(
 	 bull_id integer NOT NULL 
@@ -44,7 +42,6 @@ COMMENT ON COLUMN "db_Sirel"."bulletin".updated_at IS
 
 -- =============================================
 -- TABLA: bulletin_resource
--- DROP TABLE "db_Sirel".bulletin_resource
 -- =============================================
 CREATE TABLE IF NOT EXISTS "db_Sirel".bulletin_resource
 (
@@ -61,17 +58,18 @@ COMMENT ON COLUMN "db_Sirel"."bulletin_resource".resource_desc IS
 
 -- =============================================
 -- TABLA: bulletin_sections
--- DROP TABLE "db_Sirel".bulletin_sections
 -- =============================================
 CREATE TABLE IF NOT EXISTS "db_Sirel".bulletin_sections 
 (	
 	 section_id INTEGER NOT NULL
 	,section_segment INTEGER NOT NULL
 	,section_subsegment INTEGER NOT NULL
+	,section_subsegment_num INTEGER NOT NULL
 	,bull_id INTEGER NOT NULL
 	,resource_id INTEGER NULL
 	,section_order INTEGER NOT NULL
     ,section_content TEXT NOT NULL
+	,section_format TEXT NOT NULL
 	,section_css INTEGER NOT NULL
 	,section_htmltag character varying(10)
     ,section_status boolean DEFAULT true NOT NULL
@@ -100,6 +98,8 @@ COMMENT ON COLUMN "db_Sirel"."bulletin_sections".section_segment IS
 'Número de segmento principal al que pertenece la sección. Permite agrupar secciones en bloques mayores dentro del boletín. Parte de la clave primaria compuesta.';
 COMMENT ON COLUMN "db_Sirel"."bulletin_sections".section_subsegment IS 
 'Número de subsegmento dentro del segmento. Permite una organización jerárquica de segundo nivel. Parte de la clave primaria compuesta.';
+COMMENT ON COLUMN "db_Sirel"."bulletin_sections".section_subsegment_num IS
+'Número de divisiones o columnas visibles al usuario, dentro de un segmento';
 COMMENT ON COLUMN "db_Sirel"."bulletin_sections".bull_id IS 
 'Identificador del boletín al que pertenece la sección. Clave foránea hacia bulletin.bull_id. Si el boletín es eliminado, sus secciones se eliminan en cascada.';
 COMMENT ON COLUMN "db_Sirel"."bulletin_sections".resource_id IS 
@@ -108,6 +108,8 @@ COMMENT ON COLUMN "db_Sirel"."bulletin_sections".section_order IS
 'Orden de presentación de la sección dentro del boletín. Determina la secuencia visual en que se muestran las secciones al renderizar el boletín.';
 COMMENT ON COLUMN "db_Sirel"."bulletin_sections".section_content IS 
 'Contenido principal de la sección. Puede contener texto plano, HTML o referencia a un recurso según el tipo de sección definido.';
+COMMENT ON COLUMN "db_Sirel"."bulletin_sections".section_format IS 
+'Contenido principal de la sección. Con identificadores para interpretarse en html.';
 COMMENT ON COLUMN "db_Sirel"."bulletin_sections".section_css IS 
 'Identificador o código de estilos CSS aplicados a la sección. Permite personalizar la apariencia visual de cada bloque de contenido.';
 COMMENT ON COLUMN "db_Sirel"."bulletin_sections".section_htmltag IS 
@@ -122,5 +124,3 @@ COMMENT ON COLUMN "db_Sirel"."bulletin_sections".updated_at IS
 ALTER TABLE "db_Sirel".bulletin OWNER TO postgres;
 ALTER TABLE "db_Sirel".bulletin_resource OWNER TO postgres;
 ALTER TABLE "db_Sirel".bulletin_sections OWNER TO postgres;
-
-

@@ -216,14 +216,18 @@ router.get('/bulletin/sections/:id', verifyToken, getBulletinSections);
  *                   required:
  *                     - section_segment
  *                     - section_subsegment
+ *                     - section_subsegment_num
  *                     - bull_id
  *                     - section_order
  *                     - section_content
+ *                     - section_format
  *                     - section_css
  *                   properties:
  *                     section_segment:
  *                       type: integer
  *                     section_subsegment:
+ *                       type: integer
+ *                     section_subsegment_num:
  *                       type: integer
  *                     bull_id:
  *                       type: integer
@@ -233,6 +237,8 @@ router.get('/bulletin/sections/:id', verifyToken, getBulletinSections);
  *                     section_order:
  *                       type: integer
  *                     section_content:
+ *                       type: string
+ *                     section_format:
  *                       type: string
  *                     section_css:
  *                       type: integer

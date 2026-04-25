@@ -19,11 +19,13 @@ BEGIN
     SELECT S.section_id
 		, S.section_segment
 		, S.section_subsegment
+    , S.section_subsegment_num
 		, S.bull_id
 		, S.resource_id
 		, P.resource_desc
 		, S.section_order
 		, S.section_content
+    , S.section_format
 		, S.section_css
 		, S.section_htmltag
 		, S.section_status
@@ -91,7 +93,7 @@ BEGIN
     ORDER BY b.bull_id;
 END;
 $$;
-COMMENT ON FUNCTION "db_Sirel".FNS_BULLETINS(INTEGER) IS 
+COMMENT ON FUNCTION "db_Sirel".FNS_BULLETINS(INTEGER, BOOLEAN) IS 
 'CONSULTA: Retorna la información de uno o todos los boletines registrados según estado activos = true, todos = NULL.
 
  PARÁMETROS:
@@ -205,7 +207,7 @@ BEGIN
 LEFT JOIN "db_Sirel".bulletin_sections bs on b.bull_id = bs.bull_id
 	WHERE (unaccent(lower(b.bull_desc)) like '%' || unaccent(lower(keyword)) || '%')
 	   OR (unaccent(lower(b.bull_name)) like '%' || unaccent(lower(keyword)) || '%')
-	   OR (unaccent(lower(bs.section_content)) like '%' || unaccent(lower(keyword)) || '%');
+	   OR (unaccent(lower(bs.section_content)) like '%' || unaccent(lower(keyword)) || '%')
     group by b.bull_id
 		order by b.bull_id;
 END;
@@ -379,17 +381,149 @@ COMMENT ON FUNCTION "db_Sirel".FNI_BULLETIN_SECTIONS(JSON) IS
 Retorna una fila por cada ítem procesado indicando OK o ERROR.
 Campos requeridos: bull_id, section_content, section_order.';
 
- 
+CREATE OR REPLACE FUNCTION "db_Sirel".FNI_BULLETIN(
+  p_bull_name       CHARACTER VARYING(100),
+  p_bull_acronym    CHARACTER VARYING(100),
+  p_bull_desc       TEXT,
+  p_bull_img_path   TEXT,
+  p_bull_active_ini DATE,
+  p_bull_active_end DATE,
+  p_bull_status     BOOLEAN,
+  p_updated_by      CHARACTER VARYING(100)
+)
+RETURNS "db_Sirel"."bulletin_type"
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_result        "db_Sirel"."bulletin_type";
+  v_bull_id       INTEGER;
+  v_img_extension TEXT;
+  v_img_path      TEXT;
+BEGIN
+  INSERT INTO "db_Sirel".bulletin (
+    bull_name, bull_acronym, bull_desc, bull_img_path,
+    bull_active_ini, bull_active_end, bull_status, updated_by
+  )
+  VALUES (
+    p_bull_name, p_bull_acronym, p_bull_desc, p_bull_img_path,
+    p_bull_active_ini, p_bull_active_end, COALESCE(p_bull_status, TRUE), p_updated_by
+  )
+  RETURNING bull_id INTO v_bull_id;
+
+	IF p_bull_img_path IS NOT NULL THEN	
+		v_img_extension := (regexp_matches(p_bull_img_path, '\.([^.]+)$'))[1];
+		v_img_path      := substring(p_bull_img_path FROM '^(.*/)');
+		
+		UPDATE "db_Sirel".bulletin
+		SET bull_img_path = v_img_path || 'Logo' || v_bull_id || '.' || v_img_extension
+		WHERE bull_id = v_bull_id;
+		
+	END IF;
+	
+	SELECT bull_id, bull_name, bull_acronym, bull_desc, bull_img_path,
+	bull_active_ini, bull_active_end, bull_status, updated_by, updated_at
+	INTO v_result
+	FROM "db_Sirel".bulletin
+	WHERE bull_id = v_bull_id;
+
+  RETURN v_result;
+END;
+$$;
+COMMENT ON FUNCTION "db_Sirel".FNI_BULLETIN(
+  CHARACTER VARYING(100),
+  CHARACTER VARYING(100),
+  TEXT,
+  TEXT,
+  DATE,
+  DATE,
+  BOOLEAN,
+  CHARACTER VARYING(100)
+) IS
+'FUNCIÓN: FNI_BULLETIN
+ESQUEMA: db_Sirel
+TIPO: Inserción
+RETORNA: bulletin_type
+
+DESCRIPCIÓN:
+  Inserta un nuevo registro en la tabla bulletin y retorna el registro completo
+  recién creado como tipo compuesto bulletin_type. Si se proporciona una ruta
+  de imagen, estandariza el nombre del archivo usando el formato:
+  <ruta_original>Logo<bull_id>.<extensión>
+
+PARÁMETROS:
+  p_bull_name       VARCHAR(100) - Nombre del boletín (requerido)
+  p_bull_acronym    VARCHAR(100) - Acrónimo identificador del boletín (requerido)
+  p_bull_desc       TEXT         - Descripción detallada del boletín
+  p_bull_img_path   TEXT         - Ruta de la imagen del boletín (opcional)
+  p_bull_active_ini DATE         - Fecha de inicio de vigencia del boletín
+  p_bull_active_end DATE         - Fecha de fin de vigencia del boletín
+  p_bull_status     BOOLEAN      - Estado activo/inactivo (default: TRUE si es NULL)
+  p_updated_by      VARCHAR(100) - Usuario que realiza la inserción
+
+RETORNO:
+  Registro completo de tipo bulletin_type con los campos:
+    - bull_id         : ID generado automáticamente
+    - bull_name       : Nombre del boletín
+    - bull_acronym    : Acrónimo del boletín
+    - bull_desc       : Descripción
+    - bull_img_path   : Ruta final de la imagen (renombrada si aplica)
+    - bull_active_ini : Fecha inicio de vigencia
+    - bull_active_end : Fecha fin de vigencia
+    - bull_status     : Estado del boletín
+    - updated_by      : Usuario que realizó la operación
+    - updated_at      : Fecha y hora de la operación
+
+LÓGICA INTERNA:
+  1. Inserta el registro en la tabla bulletin obteniendo el bull_id generado.
+  2. Si p_bull_img_path no es NULL, extrae la extensión y la ruta base
+     del archivo y actualiza bull_img_path con el formato estandarizado:
+     <ruta_base>Logo<bull_id>.<extensión>
+  3. Retorna el registro completo desde la tabla.
+
+EJEMPLO DE USO:
+  SELECT * FROM "db_Sirel".FNI_BULLETIN(
+    ''Boletín Mensual'',
+    ''BLT-MEN'',
+    ''Boletín informativo mensual de la organización'',
+    ''/img/boletines/imagen.png'',
+    ''2024-01-01''::DATE,
+    ''2024-12-31''::DATE,
+    TRUE,
+    ''admin''
+  );
+
+NOTAS:
+  - Si p_bull_status es NULL, se asigna TRUE por defecto (COALESCE).
+  - La ruta de imagen resultante seguirá el formato: /img/boletines/Logo1.png
+  - El campo updated_at es gestionado automáticamente por la tabla.
+
+AUTOR:        [nombre del autor]
+FECHA:        [fecha de creación]
+VERSIÓN:      1.0
+MODIFICACIONES:
+  [YYYY-MM-DD] [autor] - [descripción del cambio]';
+
 
 ALTER FUNCTION "db_Sirel".FNS_BULLETINS(p_bull_id INTEGER)
+    OWNER TO postgres;
+ALTER FUNCTION "db_Sirel".FNI_BULLETIN( CHARACTER VARYING(100),
+                                        CHARACTER VARYING(100),
+                                        TEXT,
+                                        TEXT,
+                                        DATE,
+                                        DATE,
+                                        BOOLEAN,
+                                        CHARACTER VARYING(100)
+                                      ) 
     OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".FNI_BULLETIN_RESOURCES(p_data JSONB)
     OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".FNI_BULLETIN_SECTIONS(p_data JSON)
     OWNER TO postgres;
-ALTER FUNCTION "db_Sirel".FNS_BULL_SECTIONS(p_data JSON)
+ALTER FUNCTION "db_Sirel".FNS_BULL_SECTIONS(p_bull_id INTEGER)
 OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".FNS_BULLETINES_BYWORD(keyword character varying)
     OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".fnu_bulletin(integer, character varying, character varying, text, text, date, date, boolean, character varying)
     OWNER TO postgres;
+

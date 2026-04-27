@@ -106,9 +106,9 @@ const createBulletinSectionsBatch = async (req, res) => {
     await pool.query('BEGIN');
     const queryText = `
       INSERT INTO "db_Sirel".bulletin_sections (
-        section_segment, section_subsegment, section_subsegment_num, bull_id, resource_id,
-        section_order, section_content, section_format, section_css, section_htmltag, 
-        section_status, updated_by
+        section_segment, section_subsegment, section_subsegment_num, bull_id, 
+        resource_id, section_order, section_content, section_format, 
+        section_css, section_htmltag, section_status, updated_by
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     `;
 

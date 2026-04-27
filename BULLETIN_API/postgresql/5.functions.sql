@@ -6,7 +6,7 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
+DO $$ BEGIN RAISE NOTICE 'Función creada: set_updated_at'; END $$;
 -- =============================================
 -- FUNCIÓN: FNS_BULL_SECTIONS
 -- =============================================
@@ -58,6 +58,7 @@ COMMENT ON FUNCTION "db_Sirel".FNS_BULL_SECTIONS(INTEGER) IS
 
  EJEMPLO DE USO:
    SELECT * FROM "db_Sirel".FNS_BULL_SECTIONS(1);';
+DO $$ BEGIN RAISE NOTICE 'Función creada: FNS_BULL_SECTIONS'; END $$;
 
 CREATE OR REPLACE FUNCTION "db_Sirel".FNS_BULLETINS(p_bull_id INTEGER DEFAULT NULL, p_bull_status BOOLEAN DEFAULT NULL)
 RETURNS TABLE (
@@ -121,11 +122,11 @@ COMMENT ON FUNCTION "db_Sirel".FNS_BULLETINS(INTEGER, BOOLEAN) IS
 
    -- Obtener un boletín específico
    SELECT * FROM "db_Sirel".FNS_BULLETINS(3,true);';
+DO $$ BEGIN RAISE NOTICE 'Función creada: FNS_BULLETINS'; END $$;
 
 -- =============================================
 -- FUNCIÓN: FNI_BULLETIN_RESOURCES
 -- =============================================
-
 CREATE OR REPLACE FUNCTION "db_Sirel".FNI_BULLETIN_RESOURCES(p_data JSONB)
 RETURNS TABLE(resource_id INTEGER) 
 LANGUAGE plpgsql
@@ -171,6 +172,7 @@ COMMENT ON FUNCTION "db_Sirel".FNI_BULLETIN_RESOURCES(JSONB) IS
    SELECT * FROM "db_Sirel".FNI_BULLETIN_RESOURCES(
      ''[{"resource_desc": "Imagen principal"}, {"resource_desc": "Archivo PDF"}]''::JSONB
    );';
+DO $$ BEGIN RAISE NOTICE 'Función creada: FNI_BULLETIN_RESOURCES'; END $$;
 
 -- =============================================
 -- FUNCIÓN: FNS_BULLETINES_BYWORD
@@ -235,9 +237,9 @@ COMMENT ON FUNCTION "db_Sirel".FNS_BULLETINES_BYWORD(character varying) IS
  EJEMPLOS DE USO:
    -- Obtener todos los boletines
    SELECT * FROM "db_Sirel".FNS_BULLETINES_BYWORD(''descr'')';
+DO $$ BEGIN RAISE NOTICE 'Función creada: FNS_BULLETINES_BYWORD'; END $$;
 
-
-CREATE OR REPLACE FUNCTION "db_Sirel".fnu_bulletin(
+CREATE OR REPLACE FUNCTION "db_Sirel".FNU_BULLETIN(
 	p_bull_id integer,
 	p_bull_name character varying DEFAULT (NULL::boolean),
 	p_bull_acronym character varying DEFAULT ( NULL::boolean),
@@ -271,6 +273,8 @@ BEGIN
     RETURN QUERY SELECT p_bull_id;
 END;
 $BODY$;
+DO $$ BEGIN RAISE NOTICE 'Función creada: FNU_BULLETIN'; END $$;
+
 CREATE OR REPLACE FUNCTION "db_Sirel".FNI_BULLETIN_SECTIONS(
     p_data JSON
 )
@@ -375,11 +379,11 @@ BEGIN
     RETURN;
 END;
 $$;
-
 COMMENT ON FUNCTION "db_Sirel".FNI_BULLETIN_SECTIONS(JSON) IS
 'Función batch para inserción de secciones de boletines.
 Retorna una fila por cada ítem procesado indicando OK o ERROR.
 Campos requeridos: bull_id, section_content, section_order.';
+DO $$ BEGIN RAISE NOTICE 'Función creada: FNI_BULLETIN_SECTIONS'; END $$;
 
 CREATE OR REPLACE FUNCTION "db_Sirel".FNI_BULLETIN(
   p_bull_name       CHARACTER VARYING(100),
@@ -502,10 +506,9 @@ FECHA:        [fecha de creación]
 VERSIÓN:      1.0
 MODIFICACIONES:
   [YYYY-MM-DD] [autor] - [descripción del cambio]';
+DO $$ BEGIN RAISE NOTICE 'Función creada: FNI_BULLETIN'; END $$;
 
-
-ALTER FUNCTION "db_Sirel".FNS_BULLETINS(p_bull_id INTEGER)
-    OWNER TO postgres;
+ALTER FUNCTION "db_Sirel".FNS_BULLETINS(p_bull_id INTEGER) OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".FNI_BULLETIN( CHARACTER VARYING(100),
                                         CHARACTER VARYING(100),
                                         TEXT,
@@ -514,16 +517,11 @@ ALTER FUNCTION "db_Sirel".FNI_BULLETIN( CHARACTER VARYING(100),
                                         DATE,
                                         BOOLEAN,
                                         CHARACTER VARYING(100)
-                                      ) 
-    OWNER TO postgres;
-ALTER FUNCTION "db_Sirel".FNI_BULLETIN_RESOURCES(p_data JSONB)
-    OWNER TO postgres;
-ALTER FUNCTION "db_Sirel".FNI_BULLETIN_SECTIONS(p_data JSON)
-    OWNER TO postgres;
-ALTER FUNCTION "db_Sirel".FNS_BULL_SECTIONS(p_bull_id INTEGER)
-OWNER TO postgres;
-ALTER FUNCTION "db_Sirel".FNS_BULLETINES_BYWORD(keyword character varying)
-    OWNER TO postgres;
+                                      ) OWNER TO postgres;
+ALTER FUNCTION "db_Sirel".FNI_BULLETIN_RESOURCES(p_data JSONB) OWNER TO postgres;
+ALTER FUNCTION "db_Sirel".FNI_BULLETIN_SECTIONS(p_data JSON) OWNER TO postgres;
+ALTER FUNCTION "db_Sirel".FNS_BULL_SECTIONS(p_bull_id INTEGER) OWNER TO postgres;
+ALTER FUNCTION "db_Sirel".FNS_BULLETINES_BYWORD(keyword character varying) OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".fnu_bulletin(integer, character varying, character varying, text, text, date, date, boolean, character varying)
     OWNER TO postgres;
 

@@ -70,8 +70,8 @@ CREATE TABLE IF NOT EXISTS "db_Sirel".bulletin_sections
 	,section_order INTEGER NOT NULL
     ,section_content TEXT NOT NULL
 	,section_format TEXT NOT NULL
-	,section_css INTEGER NOT NULL
-	,section_htmltag character varying(10)
+	,section_css CHARACTER VARYING(50) NOT NULL
+	,section_htmltag CHARACTER VARYING(10)
     ,section_status boolean DEFAULT true NOT NULL
 	,updated_by character varying(100) DEFAULT 'SISTEMA'::character varying
     ,updated_at timestamp without time zone DEFAULT now()

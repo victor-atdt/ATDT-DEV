@@ -1,4 +1,5 @@
 
+
 -- =============================================
 -- TYPE: section_result_type
 -- =============================================
@@ -10,14 +11,14 @@ BEGIN
     section_segment INTEGER,
     section_subsegment INTEGER,
     section_subsegment_num INTEGER,
-	  bull_id INTEGER,
+	bull_id INTEGER,
     resource_id INTEGER,
     resource_desc TEXT, 
     section_order INTEGER,
     section_content TEXT,
     section_format TEXT,
-    section_css INTEGER,
-    section_htmltag CHAR VARYING(10),
+    section_css CHARACTER VARYING(50),
+    section_htmltag CHARACTER VARYING(10),
     section_status BOOLEAN
 	);
 
@@ -31,14 +32,14 @@ COMMENT ON TYPE "db_Sirel".section_result_type IS
    - section_id         (INTEGER)       : Identificador de la sección.
    - section_segment    (INTEGER)       : Segmento principal al que pertenece la sección.
    - section_subsegment (INTEGER)       : Subsegmento dentro del segmento, para organización jerárquica de segundo nivel.
-   - section_subsegment_num (INTEGER)       : Subsegmento dentro del segmento, para organización jerárquica de segundo nivel.
+   - section_subsegment_num (INTEGER)   : Subsegmento dentro del segmento, para organización jerárquica de segundo nivel.
    - bull_id            (INTEGER)       : Identificador del boletín al que pertenece la sección. Referencia a bulletin.bull_id.
    - resource_id        (INTEGER)       : Identificador del recurso asociado a la sección. Puede ser NULL si no tiene recurso.
    - path_desc          (TEXT)          : Descripción o ruta del recurso obtenida desde bulletin_path mediante JOIN.
    - section_order      (INTEGER)       : Orden de presentación de la sección dentro del boletín.
    - section_content    (TEXT)          : Contenido principal de la sección (texto, HTML u referencia a recurso).
    - section_format     (TEXT)          : Contenido principal de la sección (texto, HTML u referencia a recurso).
-   - section_css        (INTEGER)       : Identificador del estilo CSS aplicado a la sección.
+   - section_css        (VARCHAR(50))   : Identificador del estilo CSS aplicado a la sección.
    - section_htmltag    (VARCHAR(10))   : Etiqueta HTML usada para renderizar la sección. Ej: "div", "p", "h1".
    - section_status     (BOOLEAN)       : Estado activo/inactivo de la sección. TRUE = activa, FALSE = inactiva.
 

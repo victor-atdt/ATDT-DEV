@@ -241,7 +241,7 @@ router.get('/bulletin/sections/:id', verifyToken, getBulletinSections);
  *                     section_format:
  *                       type: string
  *                     section_css:
- *                       type: integer
+ *                       type: string
  *                     section_htmltag:
  *                       type: string
  *                       maxLength: 10
@@ -304,7 +304,7 @@ router.post('/bulletin/sections/batch', verifyToken, createBulletinSectionsBatch
  *                     section_content:
  *                       type: string
  *                     section_css:
- *                       type: integer
+ *                       type: string
  *                     section_htmltag:
  *                       type: string
  *                       maxLength: 10

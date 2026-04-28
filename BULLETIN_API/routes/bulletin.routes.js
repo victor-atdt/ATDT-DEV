@@ -1,16 +1,73 @@
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+const path = require('path');
 const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middleware/auth.middleware'); 
 const {
+  createBulletin,
   getBulletins,
   updateBulletin,
-  createBulletin,
   getBulletinsByWord,
   getBulletinSections,
   createBulletinSectionsBatch,
   createBulletinSectionsBatchSP,
   createBulletinResources
 } = require('../controllers/bulletin.controller');
+
+/**
+ * @openapi
+ * /bulletin:
+ *   post:
+ *     summary: Crea un boletín y guarda su imagen en un solo paso
+ *     tags:
+ *       - Bulletins
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - bull_name
+ *               - bull_acronym
+ *               - bull_desc
+ *               - image
+ *             properties:
+ *               bull_name:
+ *                 type: string
+ *               bull_acronym:
+ *                 type: string
+ *               bull_desc:
+ *                 type: string
+ *               bull_active_ini:
+ *                 type: string
+ *                 format: date
+ *               bull_active_end:
+ *                 type: string
+ *                 format: date
+ *               bull_status:
+ *                 type: boolean
+ *                 default: true
+ *               updated_by:
+ *                 type: string
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *                 description: Imagen PNG del boletín
+ *     responses:
+ *       201:
+ *         description: Boletín e imagen creados exitosamente
+ *       400:
+ *         description: Faltan parámetros o el acrónimo ya existe
+ *       401:
+ *         description: Token no proporcionado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.post('/bulletin', verifyToken, upload.single('image'), createBulletin);
 
 /**
  * @openapi
@@ -115,57 +172,6 @@ router.get('/bulletins/:id/:status', verifyToken, getBulletins);
  *         description: Error en el servidor
  */
 router.patch('/bulletins/:id', verifyToken, updateBulletin);
-
-/**
- * @openapi
- * /bulletin:
- *   post:
- *     summary: Creates a bulletin
- *     tags:
- *       - Bulletins
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - bull_name
- *               - bull_acronym
- *               - bull_desc
- *               - bull_img_path
- *             properties:
- *               bull_name:
- *                 type: string
- *               bull_acronym:
- *                 type: string
- *               bull_desc:
- *                 type: string
- *               bull_img_path:
- *                 type: string
- *               bull_active_ini:
- *                 type: string
- *                 format: date
- *               bull_active_end:
- *                 type: string
- *                 format: date
- *               bull_status:
- *                 type: boolean
- *                 default: true
- *               updated_by:
- *                 type: string
- *                 default: 'API_USER'
- *     responses:
- *       201:
- *         description: Boletín creado exitosamente
- *       400:
- *         description: Error en los datos de entrada
- *       500:
- *         description: Error en el servidor
- */
-router.post('/bulletin', verifyToken, createBulletin);
 
 /**
  * @openapi

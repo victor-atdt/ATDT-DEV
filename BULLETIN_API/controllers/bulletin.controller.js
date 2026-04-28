@@ -1,4 +1,43 @@
 const { pool } = require('../db');
+const fs = require('fs');
+const path = require('path');
+
+const createBulletin = async (req, res) => {
+  // 1. Validar imagen PRIMERO, antes de tocar la BD
+  if (!req.file) {
+    return res.status(400).json({ error: 'No se recibió ninguna imagen.' });
+  }
+
+  const { bull_name, bull_acronym, bull_desc, bull_active_ini, bull_active_end, bull_status, updated_by } = req.body;
+
+  try {
+    // 2. Generar el path de imagen a partir del acrónimo
+    const v_bull_image = req.file.originalname;
+    // 3. Guardar el boletín en la BD con el path generado
+    const queryText = `SELECT * FROM "db_Sirel".FNI_BULLETIN($1, $2, $3, $4, $5, $6, COALESCE($7, true), $8)`;
+    const result = await pool.query(queryText, [
+      bull_name, bull_acronym, bull_desc, v_bull_image,
+      bull_active_ini || null, bull_active_end || null,
+      bull_status, updated_by
+    ]);
+
+    const bulletinInfo = result.rows[0].bull_img_path;
+    // 4. Guardar la imagen en disco solo si la BD fue exitosa
+    const destPath = path.join(__dirname, '../public/images/', `${bulletinInfo}`);
+    fs.writeFileSync(destPath, req.file.buffer);
+
+    return res.status(201).json({
+      message: 'Boletín creado exitosamente.'
+    });
+
+  } catch (err) {
+    console.error('Error al crear boletín con imagen:', err);
+    if (err.code === '23505') {
+      return res.status(400).json({ error: 'El ID o el Acrónimo ya existen.' });
+    }
+    return res.status(500).json({ error: 'Error interno del servidor', details: err.message });
+  }
+};
 
 const getBulletins = async (req, res) => {
   try {
@@ -59,26 +98,6 @@ const updateBulletin = async (req, res) => {
   }
 };
 
-const createBulletin = async (req, res) => {
-  const { bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini, bull_active_end, bull_status, updated_by } = req.body;
-
-  const queryText = `SELECT * FROM "db_Sirel".FNI_BULLETIN($1, $2, $3, $4, $5, $6, COALESCE($7, true), $8)`;
-  try {
-    const result = await pool.query(queryText, [
-      bull_name, bull_acronym, bull_desc, bull_img_path,
-      bull_active_ini || null, bull_active_end || null,
-      bull_status, updated_by
-    ]);
-    return res.status(201).json({ mensaje: "Boletín creado con éxito", info: result.rows[0] });
-  } catch (err) {
-    console.error("Error al insertar boletín:", err);
-    if (err.code === '23505') {
-      return res.status(400).json({ error: "El ID o el Acrónimo ya existen." });
-    }
-    return res.status(500).json({ error: "Error al guardar en la base de datos", details: err.message });
-  }
-
-};
 const getBulletinSections = async (req, res) => {
   try {
     const { id } = req.params;
@@ -110,18 +129,26 @@ const createBulletinSectionsBatch = async (req, res) => {
         resource_id, section_order, section_content, section_format, 
         section_css, section_htmltag, section_status, updated_by
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      RETURNING *
     `;
 
+    const insertedRows = [];
+
     for (const item of data) {
-      await pool.query(queryText, [
+      const result = await pool.query(queryText, [
         item.section_segment, item.section_subsegment, item.section_subsegment_num, item.bull_id, item.resource_id,
         item.section_order, item.section_content, item.section_format, item.section_css, item.section_htmltag,
         item.section_status, item.updated_by
       ]);
+      insertedRows.push(result.rows[0]);
     }
 
     await pool.query('COMMIT');
-    return res.status(201).json({ mensaje: "Todas las secciones fueron guardadas exitosamente" });
+    return res.status(201).json({ 
+      mensaje: "Todas las secciones fueron guardadas exitosamente",
+      total: insertedRows.length,
+      data: insertedRows  // JSON con todos los registros insertados
+    });
   } catch (err) {
     await pool.query('ROLLBACK');
     console.error("Error en inserción masiva:", err);
@@ -168,9 +195,9 @@ const createBulletinResources = async (req, res) => {
 };
 
 module.exports = {
+  createBulletin,
   getBulletins,
   updateBulletin,
-  createBulletin,
   getBulletinsByWord,
   getBulletinSections,
   createBulletinSectionsBatch,

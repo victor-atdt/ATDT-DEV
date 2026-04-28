@@ -416,10 +416,9 @@ BEGIN
 
 	IF p_bull_img_path IS NOT NULL THEN	
 		v_img_extension := (regexp_matches(p_bull_img_path, '\.([^.]+)$'))[1];
-		v_img_path      := substring(p_bull_img_path FROM '^(.*/)');
 		
 		UPDATE "db_Sirel".bulletin
-		SET bull_img_path = v_img_path || 'Logo' || v_bull_id || '.' || v_img_extension
+		SET bull_img_path = 'Logo' || v_bull_id || '.' || v_img_extension
 		WHERE bull_id = v_bull_id;
 		
 	END IF;

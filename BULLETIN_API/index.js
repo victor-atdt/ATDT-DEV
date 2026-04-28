@@ -35,7 +35,7 @@ const swaggerOptions = {
       },
     },
   },
-  apis: ['./routes/*.js'], // 👈 ahora apunta a las rutas
+  apis: ['./routes/*.js'], 
 };
 
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
@@ -43,6 +43,7 @@ app.use(express.json());
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 app.use('/', authRoutes);
 app.use('/', bulletinRoutes);
+app.use(express.static('public'));
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);

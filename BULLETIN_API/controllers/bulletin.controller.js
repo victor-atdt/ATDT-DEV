@@ -237,6 +237,103 @@ const updateBulletinResources  = async (req, res) => {
   }
 };
 
+const updateBulletinSections = async (req, res) => {
+  const sections = req.body.sections;
+
+  // Validar que venga un array con al menos un elemento
+  if (!Array.isArray(sections) || sections.length === 0) {
+    return res.status(400).json({
+      error: 'El campo "sections" debe ser un arreglo con al menos un elemento.',
+    });
+  }
+
+  // Validar que cada elemento tenga los campos de la PK
+  const invalidItems = sections
+    .map((s, i) => ({ index: i, s }))
+    .filter(({ s }) =>
+      s.section_id        == null ||
+      s.section_segment   == null ||
+      s.section_subsegment == null ||
+      s.bull_id           == null
+    );
+
+  if (invalidItems.length > 0) {
+    return res.status(400).json({
+      error: 'Todos los registros deben incluir section_id, section_segment, section_subsegment y bull_id.',
+      invalid_indexes: invalidItems.map(({ index }) => index),
+    });
+  }
+
+  try {
+    // Construir el array de ROW(...) para PostgreSQL
+    // Cada elemento se mapea a un parámetro $N
+    const rowLiterals = sections.map((_, i) => {
+      const base = i * 13;
+      return `ROW(
+        $${base + 1},  -- section_id
+        $${base + 2},  -- section_segment
+        $${base + 3},  -- section_subsegment
+        $${base + 4},  -- section_subsegment_num
+        $${base + 5},  -- bull_id
+        $${base + 6},  -- resource_id
+        $${base + 7},  -- section_order
+        $${base + 8},  -- section_content
+        $${base + 9},  -- section_format
+        $${base + 10}, -- section_css
+        $${base + 11}, -- section_htmltag
+        $${base + 12}, -- section_status
+        $${base + 13}  -- updated_by
+      )`;
+    });
+
+    const values = sections.flatMap((s) => [
+      s.section_id,
+      s.section_segment,
+      s.section_subsegment,
+      s.section_subsegment_num  ?? null,
+      s.bull_id,
+      s.resource_id             ?? null,
+      s.section_order           ?? null,
+      s.section_content         ?? null,
+      s.section_format          ?? null,
+      s.section_css             ?? null,
+      s.section_htmltag         ?? null,
+      s.section_status          ?? null,
+      s.updated_by              ?? null,
+    ]);
+
+    const queryText = `
+      SELECT section_id, section_segment, section_subsegment, bull_id,
+             success, message, rows_affected
+      FROM "db_Sirel".FNU_BULLETIN_SECTIONS(
+        ARRAY[
+          ${rowLiterals.join(',\n          ')}
+        ]::"db_Sirel".section_input_type[]
+      )
+    `;
+
+    const result = await pool.query(queryText, values);
+
+    // Separar exitosos y fallidos para dar una respuesta clara
+    const succeeded = result.rows.filter((r) => r.success);
+    const failed    = result.rows.filter((r) => !r.success);
+
+    const httpStatus = failed.length === 0 ? 200        // todo OK
+                     : succeeded.length === 0 ? 404     // todo falló
+                     : 207;                             // parcial (Multi-Status)
+
+    return res.status(httpStatus).json({
+      total:     result.rows.length,
+      succeeded: succeeded.length,
+      failed:    failed.length,
+      results:   result.rows,
+    });
+
+  } catch (err) {
+    console.error('Error en updateBulletinSections:', err);
+    return res.status(500).json({ error: 'Error interno del servidor', details: err.message });
+  }
+};
 
 module.exports = {
   createBulletin,
@@ -247,5 +344,6 @@ module.exports = {
   createBulletinSectionsBatch,
   createBulletinSectionsBatchSP,
   createBulletinResources,
-  updateBulletinResources
+  updateBulletinResources,
+  updateBulletinSections
 };

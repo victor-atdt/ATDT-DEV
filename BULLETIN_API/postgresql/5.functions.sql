@@ -533,6 +533,146 @@ BEGIN
 END;
 $BODY$;
 DO $$ BEGIN RAISE NOTICE 'Función creada: FNU_SECTION_RESOURCES'; END $$;
+CREATE OR REPLACE FUNCTION "db_Sirel".FNU_BULLETIN_SECTIONS(
+    p_sections "db_Sirel".section_input_type[]
+)
+RETURNS TABLE (
+    section_id      INTEGER,
+    section_segment INTEGER,
+    section_subsegment INTEGER,
+    bull_id         INTEGER,
+    success         BOOLEAN,
+    message         TEXT,
+    rows_affected   INTEGER
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_input        "db_Sirel".section_input_type;
+    v_rows         INTEGER := 0;
+    v_exists       BOOLEAN := FALSE;
+BEGIN
+    -- Validar que el array no venga vacío
+    IF p_sections IS NULL OR array_length(p_sections, 1) IS NULL THEN
+        RETURN QUERY
+            SELECT NULL::INTEGER, NULL::INTEGER, NULL::INTEGER, NULL::INTEGER,
+                   FALSE, 'El arreglo de secciones viene vacío o nulo.', 0;
+        RETURN;
+    END IF;
+
+    -- Iterar sobre cada registro del array
+    FOREACH v_input IN ARRAY p_sections
+    LOOP
+        -- Validar que los campos de la PK no sean nulos
+        IF v_input.section_id IS NULL OR v_input.section_segment IS NULL
+           OR v_input.section_subsegment IS NULL OR v_input.bull_id IS NULL
+        THEN
+            RETURN QUERY
+                SELECT v_input.section_id, v_input.section_segment,
+                       v_input.section_subsegment, v_input.bull_id,
+                       FALSE,
+                       'Los campos section_id, section_segment, section_subsegment y bull_id son obligatorios.',
+                       0;
+            CONTINUE; -- Pasar al siguiente registro
+        END IF;
+
+        -- Verificar que el registro existe en la tabla
+        SELECT EXISTS (
+            SELECT 1
+            FROM "db_Sirel".bulletin_sections bs
+            WHERE bs.section_id         = v_input.section_id
+              AND bs.section_segment    = v_input.section_segment
+              AND bs.section_subsegment = v_input.section_subsegment
+              AND bs.bull_id            = v_input.bull_id
+        ) INTO v_exists;
+
+        IF NOT v_exists THEN
+            RETURN QUERY
+                SELECT v_input.section_id, v_input.section_segment,
+                       v_input.section_subsegment, v_input.bull_id,
+                       FALSE,
+                       FORMAT(
+                           'No se encontró el registro con section_id=%s, section_segment=%s, section_subsegment=%s, bull_id=%s.',
+                           v_input.section_id, v_input.section_segment,
+                           v_input.section_subsegment, v_input.bull_id
+                       ),
+                       0;
+            CONTINUE; -- Pasar al siguiente registro
+        END IF;
+
+        BEGIN
+            -- Actualizar respetando valores existentes si el campo viene NULL o vacío
+            UPDATE "db_Sirel".bulletin_sections bs
+            SET
+                section_subsegment_num = COALESCE(v_input.section_subsegment_num, bs.section_subsegment_num),
+                resource_id            = COALESCE(v_input.resource_id,            bs.resource_id),
+                section_order          = COALESCE(v_input.section_order,          bs.section_order),
+                section_content        = CASE
+                                            WHEN v_input.section_content IS NULL OR TRIM(v_input.section_content) = ''
+                                            THEN bs.section_content
+                                            ELSE v_input.section_content
+                                         END,
+                section_format         = CASE
+                                            WHEN v_input.section_format IS NULL OR TRIM(v_input.section_format) = ''
+                                            THEN bs.section_format
+                                            ELSE v_input.section_format
+                                         END,
+                section_css            = CASE
+                                            WHEN v_input.section_css IS NULL OR TRIM(v_input.section_css) = ''
+                                            THEN bs.section_css
+                                            ELSE v_input.section_css
+                                         END,
+                section_htmltag        = CASE
+                                            WHEN v_input.section_htmltag IS NULL OR TRIM(v_input.section_htmltag) = ''
+                                            THEN bs.section_htmltag
+                                            ELSE v_input.section_htmltag
+                                         END,
+                section_status         = COALESCE(v_input.section_status, bs.section_status),
+                updated_by             = CASE
+                                            WHEN v_input.updated_by IS NULL OR TRIM(v_input.updated_by) = ''
+                                            THEN 'SISTEMA'
+                                            ELSE v_input.updated_by
+                                         END,
+                updated_at             = NOW()
+            WHERE bs.section_id         = v_input.section_id
+              AND bs.section_segment    = v_input.section_segment
+              AND bs.section_subsegment = v_input.section_subsegment
+              AND bs.bull_id            = v_input.bull_id;
+
+            GET DIAGNOSTICS v_rows = ROW_COUNT;
+
+            RETURN QUERY
+                SELECT v_input.section_id, v_input.section_segment,
+                       v_input.section_subsegment, v_input.bull_id,
+                       TRUE,
+                       FORMAT('Registro actualizado exitosamente. Filas afectadas: %s', v_rows),
+                       v_rows;
+
+        EXCEPTION
+            WHEN OTHERS THEN
+                RETURN QUERY
+                    SELECT v_input.section_id, v_input.section_segment,
+                           v_input.section_subsegment, v_input.bull_id,
+                           FALSE,
+                           FORMAT('Error al actualizar: %s - %s', SQLSTATE, SQLERRM),
+                           0;
+        END;
+
+    END LOOP;
+
+END;
+$$;
+COMMENT ON FUNCTION "db_Sirel".FNU_BULLETIN_SECTIONS
+IS
+'Ejemplo de uso:
+SELECT * FROM "db_Sirel".FNU_BULLETIN_SECTIONS(
+    ARRAY[
+        ROW(1, 1, 1, 2, 10, NULL,  3, ''Contenido A'', ''html'', ''css-a'', ''p'',    true,  ''user1''),
+        ROW(2, 1, 2, 3, 10, 5,     1, '''',             '''',     '''',      NULL,   NULL,  ''user2''),
+        ROW(3, 2, 1, 1, 10, NULL,  2, ''Contenido C'', ''text'', ''css-c'', ''span'', false, NULL  )
+    ]::"db_Sirel".section_input_type[]
+);'
+DO $$ BEGIN RAISE NOTICE 'Función creada: FNU_BULLETIN_SECTIONS'; END $$;
 
 ALTER FUNCTION "db_Sirel".FNS_BULLETINS(p_bull_id INTEGER) OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".FNI_BULLETIN( CHARACTER VARYING(100),
@@ -551,3 +691,4 @@ ALTER FUNCTION "db_Sirel".FNS_BULLETINES_BYWORD(keyword character varying) OWNER
 ALTER FUNCTION "db_Sirel".FNU_BULLETIN(integer, character varying, character varying, text, text, date, date, boolean, character varying)
     OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".FNU_SECTION_RESOURCES(p_data JSONB) OWNER TO postgres;
+ALTER FUNCTION "db_Sirel".FNU_BULLETIN_SECTIONS(p_sections "db_Sirel".section_input_type[]) OWNER TO postgres;

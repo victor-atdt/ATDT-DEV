@@ -144,3 +144,33 @@ INSERT INTO "db_Sirel".bulletin_sections (
 );
 
 
+INSERT INTO "db_Sirel".cat_area (area) SELECT 'Servicios Generales' WHERE NOT EXISTS (
+    SELECT 1 FROM "db_Sirel".cat_area WHERE area = 'Servicios Generales');
+INSERT INTO "db_Sirel".cat_area (area) SELECT 'Servicios Integrales' WHERE NOT EXISTS (
+    SELECT 1 FROM "db_Sirel".cat_area WHERE area = 'Servicios Integrales');
+INSERT INTO "db_Sirel".cat_area (area) SELECT 'Recursos Humanos' WHERE NOT EXISTS (
+    SELECT 1 FROM "db_Sirel".cat_area WHERE area = 'Recursos Humanos');
+INSERT INTO "db_Sirel".cat_area (area) SELECT 'Desarrollo' WHERE NOT EXISTS (
+    SELECT 1 FROM "db_Sirel".cat_area WHERE area = 'Desarrollo');
+INSERT INTO "db_Sirel".cat_area (area) SELECT 'Calidad' WHERE NOT EXISTS (
+    SELECT 1 FROM "db_Sirel".cat_area WHERE area = 'Calidad');
+INSERT INTO "db_Sirel".cat_area (area) SELECT 'Monac' WHERE NOT EXISTS (
+    SELECT 1 FROM "db_Sirel".cat_area WHERE area = 'Monac');
+INSERT INTO "db_Sirel".cat_area (area) SELECT 'Mantenimiento' WHERE NOT EXISTS (
+    SELECT 1 FROM "db_Sirel".cat_area WHERE area = 'Mantenimiento');
+INSERT INTO "db_Sirel".cat_area (area) SELECT 'Soporte Técnico' WHERE NOT EXISTS (
+    SELECT 1 FROM "db_Sirel".cat_area WHERE area = 'Soporte Técnico');
+
+INSERT INTO "db_Sirel".catalogos_jerarquia (valor) SELECT 'Agente' WHERE NOT EXISTS (
+    SELECT 1 FROM "db_Sirel".catalogos_jerarquia WHERE valor = 'Agente');
+INSERT INTO "db_Sirel".catalogos_jerarquia (valor) SELECT 'Supervisor' WHERE NOT EXISTS (
+    SELECT 1 FROM "db_Sirel".catalogos_jerarquia WHERE valor = 'Supervisor');
+INSERT INTO "db_Sirel".catalogos_jerarquia (valor) SELECT 'Administrativo' WHERE NOT EXISTS (
+    SELECT 1 FROM "db_Sirel".catalogos_jerarquia WHERE valor = 'Administrativo');
+INSERT INTO "db_Sirel".catalogos_jerarquia (valor) SELECT 'Externo' WHERE NOT EXISTS (
+    SELECT 1 FROM "db_Sirel".catalogos_jerarquia WHERE valor = 'Externo');
+INSERT INTO "db_Sirel".catalogos_jerarquia (valor) SELECT 'Desarrollo' WHERE NOT EXISTS (
+    SELECT 1 FROM "db_Sirel".catalogos_jerarquia WHERE valor = 'Desarrollo');
+INSERT INTO "db_Sirel".catalogos_jerarquia (valor) SELECT 'Soporte' WHERE NOT EXISTS (
+    SELECT 1 FROM "db_Sirel".catalogos_jerarquia WHERE valor = 'Soporte');
+

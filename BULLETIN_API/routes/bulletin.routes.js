@@ -13,7 +13,8 @@ const {
   createBulletinSectionsBatch,
   createBulletinSectionsBatchSP,
   createBulletinResources,
-  updateBulletinResources
+  updateBulletinResources,
+  updateBulletinSections
 } = require('../controllers/bulletin.controller');
 
 /**
@@ -336,7 +337,7 @@ router.post('/bulletin/sections/batch-sp', verifyToken, createBulletinSectionsBa
  * @openapi
  * /bulletin-resources:
  *   post:
- *     summary: Inserta múltiples recursos de boletín
+ *     summary: Insert multiple resources over a bulletin
  *     tags:
  *       - Resources
  *     security:
@@ -364,7 +365,7 @@ router.post('/bulletin-resources', verifyToken, createBulletinResources);
  * @openapi
  * /bulletin-resources:
  *   patch:
- *     summary: Actualiza múltiples recursos de sección de boletín
+ *     summary: Update multiple resources in a bulltin section
  *     tags:
  *       - Resources
  *     security:
@@ -390,4 +391,76 @@ router.post('/bulletin-resources', verifyToken, createBulletinResources);
  */
 router.patch('/bulletin-resources',verifyToken, updateBulletinResources);
 
+/**
+ * @openapi
+ * /bulletin-sections:
+ *   patch:
+ *     summary: Bulletin sections update (only fields selected)
+ *     tags:
+ *       - Sections
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sections
+ *             properties:
+ *               sections:
+ *                 type: array
+ *                 minItems: 1
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - section_id
+ *                     - section_segment
+ *                     - section_subsegment
+ *                     - bull_id
+ *                   properties:
+ *                     section_id:
+ *                       type: integer
+ *                     section_segment:
+ *                       type: integer
+ *                     section_subsegment:
+ *                       type: integer
+ *                     section_subsegment_num:
+ *                       type: integer
+ *                     bull_id:
+ *                       type: integer
+ *                     resource_id:
+ *                       type: integer
+ *                     section_order:
+ *                       type: integer
+ *                     section_content:
+ *                       type: string
+ *                     section_format:
+ *                       type: string
+ *                     section_css:
+ *                       type: string
+ *                     section_htmltag:
+ *                       type: string
+ *                     section_status:
+ *                       type: boolean
+ *                     updated_by:
+ *                       type: string
+ *     responses:
+ *       200:
+ *         description: Todas las secciones actualizadas exitosamente
+ *       207:
+ *         description: Actualización parcial — algunos registros fallaron
+ *       400:
+ *         description: El body no es un array válido o faltan campos de PK
+ *       401:
+ *         description: Token no proporcionado
+ *       403:
+ *         description: Token inválido o expirado
+ *       404:
+ *         description: Ningún registro fue encontrado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.patch('/bulletin-sections', verifyToken, updateBulletinSections);
 module.exports = router;

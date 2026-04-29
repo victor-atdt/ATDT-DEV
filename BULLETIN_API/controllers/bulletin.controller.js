@@ -194,6 +194,50 @@ const createBulletinResources = async (req, res) => {
   }
 };
 
+const updateBulletinResources  = async (req, res) => {
+  const data = req.body; // [{ resource_id: 1, resource_desc: "..." }, ...]
+
+  // Validación básica
+  if (!Array.isArray(data) || data.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'El body debe ser un arreglo con al menos un elemento.',
+    });
+  }
+
+  const isValid = data.every(
+    (item) =>
+      typeof item.resource_id === 'number' &&
+      typeof item.resource_desc === 'string' &&
+      item.resource_desc.trim() !== ''
+  );
+
+  if (!isValid) {
+    return res.status(400).json({
+      success: false,
+      message: 'Cada elemento debe tener resource_id (number) y resource_desc (string).',
+    });
+  }
+
+  try {
+    const query = `SELECT "db_Sirel".FNU_SECTION_RESOURCES($1::JSONB) AS result`;
+    const { rows } = await pool.query(query, [JSON.stringify(data)]);
+
+    return res.status(200).json({
+      success: true,
+      message: rows[0].result,
+    });
+  } catch (error) {
+    console.error('Error en updateBulletinResources:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor.',
+      detail: error.message,
+    });
+  }
+};
+
+
 module.exports = {
   createBulletin,
   getBulletins,
@@ -202,5 +246,6 @@ module.exports = {
   getBulletinSections,
   createBulletinSectionsBatch,
   createBulletinSectionsBatchSP,
-  createBulletinResources
+  createBulletinResources,
+  updateBulletinResources
 };

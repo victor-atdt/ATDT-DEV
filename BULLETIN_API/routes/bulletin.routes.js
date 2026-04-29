@@ -12,7 +12,8 @@ const {
   getBulletinSections,
   createBulletinSectionsBatch,
   createBulletinSectionsBatchSP,
-  createBulletinResources
+  createBulletinResources,
+  updateBulletinResources
 } = require('../controllers/bulletin.controller');
 
 /**
@@ -358,5 +359,35 @@ router.post('/bulletin/sections/batch-sp', verifyToken, createBulletinSectionsBa
  *         description: Error interno del servidor
  */
 router.post('/bulletin-resources', verifyToken, createBulletinResources);
+
+/**
+ * @openapi
+ * /bulletin-resources:
+ *   patch:
+ *     summary: Actualiza múltiples recursos de sección de boletín
+ *     tags:
+ *       - Resources
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             items:
+ *               type: object
+ *               properties:
+ *                 resource_id:
+ *                   type: integer
+ *                 resource_desc:
+ *                   type: string
+ *     responses:
+ *       201:
+ *         description: Recursos actualizados correctamente
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.patch('/bulletin-resources',verifyToken, updateBulletinResources);
 
 module.exports = router;

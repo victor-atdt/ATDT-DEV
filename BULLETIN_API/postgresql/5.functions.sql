@@ -507,6 +507,33 @@ MODIFICACIONES:
   [YYYY-MM-DD] [autor] - [descripción del cambio]';
 DO $$ BEGIN RAISE NOTICE 'Función creada: FNI_BULLETIN'; END $$;
 
+-- FUNCTION: db_Sirel.FNU_SECTION_RESOURCES((p_data JSONB)
+CREATE OR REPLACE FUNCTION "db_Sirel".FNU_SECTION_RESOURCES(p_data JSONB)
+returns varchar
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+AS $BODY$
+BEGIN
+	
+	 UPDATE "db_Sirel".bulletin_resource AS t1
+	    SET resource_desc = t2.resource_desc
+	    FROM jsonb_to_recordset(p_data) AS t2(
+	        resource_id   INTEGER,
+	        resource_desc TEXT
+	    )
+	    WHERE t1.resource_id = t2.resource_id;
+	RETURN 'Actualización de recursos exitosa';
+
+	EXCEPTION
+    WHEN OTHERS THEN
+        RAISE NOTICE 'Ocurrió un error inesperado: %', SQLERRM;
+		RETURN 'Error: ' || SQLERRM;
+		
+END;
+$BODY$;
+DO $$ BEGIN RAISE NOTICE 'Función creada: FNU_SECTION_RESOURCES'; END $$;
+
 ALTER FUNCTION "db_Sirel".FNS_BULLETINS(p_bull_id INTEGER) OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".FNI_BULLETIN( CHARACTER VARYING(100),
                                         CHARACTER VARYING(100),
@@ -521,6 +548,6 @@ ALTER FUNCTION "db_Sirel".FNI_BULLETIN_RESOURCES(p_data JSONB) OWNER TO postgres
 ALTER FUNCTION "db_Sirel".FNI_BULLETIN_SECTIONS(p_data JSON) OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".FNS_BULL_SECTIONS(p_bull_id INTEGER) OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".FNS_BULLETINES_BYWORD(keyword character varying) OWNER TO postgres;
-ALTER FUNCTION "db_Sirel".fnu_bulletin(integer, character varying, character varying, text, text, date, date, boolean, character varying)
+ALTER FUNCTION "db_Sirel".FNU_BULLETIN(integer, character varying, character varying, text, text, date, date, boolean, character varying)
     OWNER TO postgres;
-
+ALTER FUNCTION "db_Sirel".FNU_SECTION_RESOURCES(p_data JSONB) OWNER TO postgres;

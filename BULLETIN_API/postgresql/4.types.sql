@@ -75,5 +75,27 @@ CAMPOS:
   -bull_status     BOOLEAN   Estado del boletín: TRUE = activo, FALSE = inactivo
   -updated_by      VARCHAR   Usuario que realizó la última actualización del registro
   -updated_at      TIMESTAMP Fecha y hora de la última actualización del registro.';
-
+-- =============================================
+-- TYPE: SECTION_RESOURCE_TYPE
+-- =============================================
+DO $$ 
+BEGIN
+	IF NOT EXISTS (SELECT 1 FROM pg_type t
+							JOIN pg_namespace n ON n.oid = t.typnamespace 
+							WHERE n.nspname = 'db_Sirel' AND t.typname = 'section_resource_type'
+				  ) THEN
+		CREATE TYPE "db_Sirel".section_resource_type AS(
+			resource_id INTEGER,
+			resource_desc TEXT
+		);
+	ELSE
+		RAISE NOTICE 'section_resource_type ya fue creado...';
+	END IF;
+END $$;
+COMMENT ON TYPE "db_Sirel".section_resource_type IS 
+'Tipo de dato compuesto utilizado como estructura de retorno de la función FNU_BULLETIN_RESOURCES.
+ Define los campos que conforman un recurso (imagen o hyperlink) asociado a una sección.
+ CAMPOS:
+   - resource_id      (INTEGER)    : Identificador del recurso.
+   - resource_desc    (TEXT)       : Segmento principal al que pertenece la sección.'
 

@@ -8,17 +8,34 @@ const createBulletin = async (req, res) => {
     return res.status(400).json({ error: 'No se recibió ninguna imagen.' });
   }
 
-  const { bull_name, bull_acronym, bull_desc, bull_active_ini, bull_active_end, bull_status, updated_by } = req.body;
+  const { bulletinName, bulletinAcronym, bull_desc, bull_active_ini, bull_active_end, bull_area, bull_shared, bull_status, updated_by } = req.body;
 
   try {
     // 2. Generar el path de imagen a partir del acrónimo
     const v_bull_image = req.file.originalname;
     // 3. Guardar el boletín en la BD con el path generado
-    const queryText = `SELECT * FROM "db_Sirel".FNI_BULLETIN($1, $2, $3, $4, $5, $6, COALESCE($7, true), $8)`;
+    const queryText = `
+      SELECT * FROM "db_Sirel".FNI_BULLETIN(
+      $1, $2, $3, $4,
+      $5::date,
+      $6::date,
+      $7::integer,
+      $8::boolean,
+      $9::boolean,
+      $10
+    )`;
+
     const result = await pool.query(queryText, [
-      bull_name, bull_acronym, bull_desc, v_bull_image,
-      bull_active_ini || null, bull_active_end || null,
-      bull_status, updated_by
+      bulletinName,
+      bulletinAcronym,
+      bull_desc,
+      v_bull_image,
+      bull_active_ini  || null,
+      bull_active_end  || null,
+      parseInt(bull_area),                          
+      bull_shared, //=== 'true' || bull_shared === true, //
+      bull_status, //=== 'true' || bull_status === true,  //
+      updated_by
     ]);
 
     const bulletinInfo = result.rows[0].bull_img_path;
@@ -41,10 +58,11 @@ const createBulletin = async (req, res) => {
 
 const getBulletins = async (req, res) => {
   try {
-    const { id, status } = req.query;
-    const queryText = 'SELECT * FROM "db_Sirel".FNS_BULLETINS($1, $2)';
-    const result = await pool.query(queryText, [id || null, status || null]);
-
+    const { id, status, user } = req.query;
+ console.log( id, status, user );   
+    const queryText = 'SELECT * FROM "db_Sirel".FNS_BULLETINS($1, $2, $3)';
+    const result = await pool.query(queryText, [id || null, status || null, user]);
+console.log("result", result.rows);
     return res.status(200).json(result.rows);
   } catch (err) {
     console.error("Error en la ruta /bulletins:", err);
@@ -54,10 +72,10 @@ const getBulletins = async (req, res) => {
 
 const getBulletinsByWord = async (req, res) => {
   try {
-    const { keyword } = req.query;
+    const { keyword, user } = req.query;
     console.log("keyword", keyword);
-    const queryText = 'SELECT * FROM "db_Sirel".FNS_BULLETINES_BYWORD($1)';
-    const result = await pool.query(queryText, [keyword || null]);
+    const queryText = 'SELECT * FROM "db_Sirel".FNS_BULLETINES_BYWORD($1, $2)';
+    const result = await pool.query(queryText, [keyword || null, user]);
 
     console.log("Filas enviando al navegador:", result.rowCount);
     return res.status(200).json(result.rows);
@@ -334,6 +352,8 @@ const updateBulletinSections = async (req, res) => {
     return res.status(500).json({ error: 'Error interno del servidor', details: err.message });
   }
 };
+
+
 
 module.exports = {
   createBulletin,

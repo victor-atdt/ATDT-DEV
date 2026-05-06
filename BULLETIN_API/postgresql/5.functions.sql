@@ -31,7 +31,7 @@ BEGIN
 		, S.section_status
     FROM "db_Sirel".bulletin_sections S
     LEFT JOIN "db_Sirel".bulletin_resource P ON S.resource_id = P.resource_id
-    WHERE S.bull_id = p_bull_id;
+    WHERE S.bull_id = p_bull_id and S.section_status = true;
 END;
 $$;
 COMMENT ON FUNCTION "db_Sirel".FNS_BULL_SECTIONS(INTEGER) IS 
@@ -60,7 +60,8 @@ COMMENT ON FUNCTION "db_Sirel".FNS_BULL_SECTIONS(INTEGER) IS
    SELECT * FROM "db_Sirel".FNS_BULL_SECTIONS(1);';
 DO $$ BEGIN RAISE NOTICE 'Función creada: FNS_BULL_SECTIONS'; END $$;
 
-CREATE OR REPLACE FUNCTION "db_Sirel".FNS_BULLETINS(p_bull_id INTEGER DEFAULT NULL, p_bull_status BOOLEAN DEFAULT NULL)
+CREATE OR REPLACE FUNCTION "db_Sirel".FNS_BULLETINS(p_bull_id INTEGER DEFAULT NULL, p_bull_status BOOLEAN DEFAULT NULL,
+													p_user character varying DEFAULT NOT NULL)
 RETURNS TABLE (
     bull_id integer,
     bull_name character varying(100),
@@ -69,6 +70,9 @@ RETURNS TABLE (
     bull_img_path TEXT,
     bull_active_ini DATE,
     bull_active_end DATE,
+    bull_area INTEGER,
+    bull_order INTEGER,
+    bull_shared BOOLEAN,
     bull_status boolean,
     updated_by character varying(100),
     updated_at timestamp without time zone
@@ -77,24 +81,31 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
     RETURN QUERY 
-    SELECT 
-        b.bull_id, 
-        b.bull_name, 
-        b.bull_acronym, 
-        b.bull_desc, 
-        b.bull_img_path, 
-        b.bull_active_ini, 
-        b.bull_active_end, 
-        b.bull_status, 
-        b.updated_by, 
-        b.updated_at
-    FROM "db_Sirel"."bulletin" b
-	WHERE (p_bull_id IS NULL OR b.bull_id = p_bull_id)
-    AND (p_bull_status IS NULL OR b.bull_status = p_bull_status)
-    ORDER BY b.bull_id;
+		SELECT B.bull_id, 
+				B.bull_name, 
+				B.bull_acronym, 
+				B.bull_desc, 
+				B.bull_img_path, 
+				B.bull_active_ini, 
+				B.bull_active_end,
+				B.bull_area,
+				B.bull_order,
+				B.bull_shared,
+				B.bull_status, 
+				B.updated_by, 
+				B.updated_at
+	  FROM "db_Sirel".bulletin B
+LEFT JOIN "db_Sirel".cat_area A on A.id = B.bull_area
+LEFT JOIN "db_Sirel".usuarios U on (U.id_jerarquia IN (3,5) or U.id_Area = B.bull_area) 
+LEFT JOIN "db_Sirel".catalogos_jerarquia J on J.id_jerarquia = U.id_jerarquia
+	WHERE lower(U.usuario) = lower(p_user)
+  AND J.valor IN ('Agente','Supervisor','Administrativo','Desarrollo')
+  AND (p_bull_id IS NULL OR B.bull_id = p_bull_id)
+  AND (p_bull_status IS NULL OR B.bull_status = p_bull_status);
+
 END;
 $$;
-COMMENT ON FUNCTION "db_Sirel".FNS_BULLETINS(INTEGER, BOOLEAN) IS 
+COMMENT ON FUNCTION "db_Sirel".FNS_BULLETINS(INTEGER, BOOLEAN, character varying) IS 
 'CONSULTA: Retorna la información de uno o todos los boletines registrados según estado activos = true, todos = NULL.
 
  PARÁMETROS:
@@ -110,6 +121,9 @@ COMMENT ON FUNCTION "db_Sirel".FNS_BULLETINS(INTEGER, BOOLEAN) IS
    - bull_desc: Descripción del boletín.
    - bull_img_path: Ruta o URL de la imagen del boletín.
    - bull_active_ini / bull_active_end: Rango de fechas de vigencia.
+   - B.bull_area: área a la que pertenece el usuario,
+   - B.bull_order: ordenamiento,
+   - B.bull_shared: si va a ser compartido en visualización con otras áreas,
    - bull_status: Estado activo/inactivo del boletín.
    - updated_by / updated_at: Datos de auditoría de última modificación.
 
@@ -118,10 +132,10 @@ COMMENT ON FUNCTION "db_Sirel".FNS_BULLETINS(INTEGER, BOOLEAN) IS
 
  EJEMPLOS DE USO:
    -- Obtener todos los boletines
-   SELECT * FROM "db_Sirel".FNS_BULLETINS(null,null
+   SELECT * FROM "db_Sirel".FNS_BULLETINS(null,null,''vcruz'');
 
    -- Obtener un boletín específico
-   SELECT * FROM "db_Sirel".FNS_BULLETINS(3,true);';
+   SELECT * FROM "db_Sirel".FNS_BULLETINS(3,true,''vcruz'');';
 DO $$ BEGIN RAISE NOTICE 'Función creada: FNS_BULLETINS'; END $$;
 
 -- =============================================
@@ -178,7 +192,7 @@ DO $$ BEGIN RAISE NOTICE 'Función creada: FNI_BULLETIN_RESOURCES'; END $$;
 -- FUNCIÓN: FNS_BULLETINES_BYWORD
 -- =============================================
 CREATE EXTENSION IF NOT EXISTS unaccent;
-CREATE OR REPLACE FUNCTION "db_Sirel".FNS_BULLETINES_BYWORD(keyword character varying)
+CREATE OR REPLACE FUNCTION "db_Sirel".FNS_BULLETINES_BYWORD(keyword character varying, p_user character varying)
 RETURNS TABLE (
     bull_id integer,
     bull_name character varying(100),
@@ -187,6 +201,9 @@ RETURNS TABLE (
     bull_img_path TEXT,
     bull_active_ini DATE,
     bull_active_end DATE,
+    bull_area INTEGER,
+	bull_order INTEGER,
+	bull_shared boolean,
     bull_status boolean,
     updated_by character varying(100),
     updated_at timestamp without time zone
@@ -194,6 +211,7 @@ RETURNS TABLE (
 LANGUAGE plpgsql
 AS $$
 BEGIN
+
     RETURN QUERY 
      SELECT b.bull_id, 
 			b.bull_name, 
@@ -201,20 +219,28 @@ BEGIN
 			b.bull_desc, 
 			b.bull_img_path, 
 			b.bull_active_ini, 
-			b.bull_active_end, 
+			b.bull_active_end,
+      b.bull_area,
+      b.bull_order,
+      b.bull_shared,
 			b.bull_status, 
 			b.updated_by, 
 			b.updated_at
 	 FROM "db_Sirel".bulletin b
+LEFT JOIN "db_Sirel".cat_area A on A.id = B.bull_area
+LEFT JOIN "db_Sirel".usuarios U on (U.id_jerarquia IN (3,5) or U.id_Area = B.bull_area) 
 LEFT JOIN "db_Sirel".bulletin_sections bs on b.bull_id = bs.bull_id
-	WHERE (unaccent(lower(b.bull_desc)) like '%' || unaccent(lower(keyword)) || '%')
+LEFT JOIN "db_Sirel".catalogos_jerarquia J on J.id_jerarquia = U.id_jerarquia
+	WHERE lower(U.usuario) = lower(p_user)
+	  AND J.valor IN ('Agente','Supervisor','Administrativo','Desarrollo')
+	  AND ((unaccent(lower(b.bull_desc)) like '%' || unaccent(lower(keyword)) || '%')
 	   OR (unaccent(lower(b.bull_name)) like '%' || unaccent(lower(keyword)) || '%')
-	   OR (unaccent(lower(bs.section_content)) like '%' || unaccent(lower(keyword)) || '%')
+	   OR (unaccent(lower(bs.section_content)) like '%' || unaccent(lower(keyword)) || '%'))
     group by b.bull_id
 		order by b.bull_id;
 END;
 $$;
-COMMENT ON FUNCTION "db_Sirel".FNS_BULLETINES_BYWORD(character varying) IS 
+COMMENT ON FUNCTION "db_Sirel".FNS_BULLETINES_BYWORD(character varying, p_user character varying) IS 
 'CONSULTA: Retorna la información de uno o todos los boletines registrados que contengan una palabra específica.
 
  PARÁMETROS:
@@ -236,7 +262,7 @@ COMMENT ON FUNCTION "db_Sirel".FNS_BULLETINES_BYWORD(character varying) IS
    - bulletin_sections: almacena el documento asociado al boletín
  EJEMPLOS DE USO:
    -- Obtener todos los boletines
-   SELECT * FROM "db_Sirel".FNS_BULLETINES_BYWORD(''descr'')';
+   SELECT * FROM "db_Sirel".FNS_BULLETINES_BYWORD(''descr'',''vcruz'')';
 DO $$ BEGIN RAISE NOTICE 'Función creada: FNS_BULLETINES_BYWORD'; END $$;
 
 CREATE OR REPLACE FUNCTION "db_Sirel".FNU_BULLETIN(
@@ -392,6 +418,8 @@ CREATE OR REPLACE FUNCTION "db_Sirel".FNI_BULLETIN(
   p_bull_img_path   TEXT,
   p_bull_active_ini DATE,
   p_bull_active_end DATE,
+  p_bull_area       INTEGER,
+  p_bull_shared     BOOLEAN,
   p_bull_status     BOOLEAN,
   p_updated_by      CHARACTER VARYING(100)
 )
@@ -403,14 +431,18 @@ DECLARE
   v_bull_id       INTEGER;
   v_img_extension TEXT;
   v_img_path      TEXT;
+  v_order         INTEGER;
 BEGIN
+
+  select coalesce( max(bull_order),0) + 1 INTO v_order from "db_Sirel".bulletin where bull_area = p_bull_area;
+
   INSERT INTO "db_Sirel".bulletin (
     bull_name, bull_acronym, bull_desc, bull_img_path,
-    bull_active_ini, bull_active_end, bull_status, updated_by
+    bull_active_ini, bull_active_end,bull_area, bull_order, bull_shared, bull_status, updated_by
   )
   VALUES (
     p_bull_name, p_bull_acronym, p_bull_desc, p_bull_img_path,
-    p_bull_active_ini, p_bull_active_end, COALESCE(p_bull_status, TRUE), p_updated_by
+    p_bull_active_ini, p_bull_active_end, p_bull_area, v_order, p_bull_shared, p_bull_status, p_updated_by
   )
   RETURNING bull_id INTO v_bull_id;
 
@@ -423,13 +455,12 @@ BEGIN
 		
 	END IF;
 	
-	SELECT bull_id, bull_name, bull_acronym, bull_desc, bull_img_path,
-	bull_active_ini, bull_active_end, bull_status, updated_by, updated_at
+	SELECT bull_id, bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini, 
+  bull_active_end, bull_area, bull_order, bull_shared, bull_status, updated_by, updated_at
 	INTO v_result
 	FROM "db_Sirel".bulletin
 	WHERE bull_id = v_bull_id;
-
-  RETURN v_result;
+RETURN v_result;
 END;
 $$;
 COMMENT ON FUNCTION "db_Sirel".FNI_BULLETIN(
@@ -439,6 +470,8 @@ COMMENT ON FUNCTION "db_Sirel".FNI_BULLETIN(
   TEXT,
   DATE,
   DATE,
+  INTEGER,
+  BOOLEAN,
   BOOLEAN,
   CHARACTER VARYING(100)
 ) IS
@@ -460,6 +493,8 @@ PARÁMETROS:
   p_bull_img_path   TEXT         - Ruta de la imagen del boletín (opcional)
   p_bull_active_ini DATE         - Fecha de inicio de vigencia del boletín
   p_bull_active_end DATE         - Fecha de fin de vigencia del boletín
+  p_bull_area       INTEGER,     - Área a la que pertenece el boletín
+  p_bull_shared     BOOLEAN,     - Decide si se comparte o no con otra área
   p_bull_status     BOOLEAN      - Estado activo/inactivo (default: TRUE si es NULL)
   p_updated_by      VARCHAR(100) - Usuario que realiza la inserción
 
@@ -472,6 +507,9 @@ RETORNO:
     - bull_img_path   : Ruta final de la imagen (renombrada si aplica)
     - bull_active_ini : Fecha inicio de vigencia
     - bull_active_end : Fecha fin de vigencia
+    - bull_area       : Área a la que pertenece el boletín
+    - bull_order      : Órden en que va a ser desplegado en pantalla
+    - bull_shared     : Decide si se comparte o no con otra área
     - bull_status     : Estado del boletín
     - updated_by      : Usuario que realizó la operación
     - updated_at      : Fecha y hora de la operación
@@ -533,6 +571,7 @@ BEGIN
 END;
 $BODY$;
 DO $$ BEGIN RAISE NOTICE 'Función creada: FNU_SECTION_RESOURCES'; END $$;
+
 CREATE OR REPLACE FUNCTION "db_Sirel".FNU_BULLETIN_SECTIONS(
     p_sections "db_Sirel".section_input_type[]
 )
@@ -662,8 +701,8 @@ BEGIN
 
 END;
 $$;
-COMMENT ON FUNCTION "db_Sirel".FNU_BULLETIN_SECTIONS
-IS
+DO $$ BEGIN RAISE NOTICE 'Función creada: FNU_BULLETIN_SECTIONS'; END $$;
+COMMENT ON FUNCTION "db_Sirel".FNU_BULLETIN_SECTIONS IS
 'Ejemplo de uso:
 SELECT * FROM "db_Sirel".FNU_BULLETIN_SECTIONS(
     ARRAY[
@@ -671,24 +710,61 @@ SELECT * FROM "db_Sirel".FNU_BULLETIN_SECTIONS(
         ROW(2, 1, 2, 3, 10, 5,     1, '''',             '''',     '''',      NULL,   NULL,  ''user2''),
         ROW(3, 2, 1, 1, 10, NULL,  2, ''Contenido C'', ''text'', ''css-c'', ''span'', false, NULL  )
     ]::"db_Sirel".section_input_type[]
-);'
-DO $$ BEGIN RAISE NOTICE 'Función creada: FNU_BULLETIN_SECTIONS'; END $$;
+);';
 
-ALTER FUNCTION "db_Sirel".FNS_BULLETINS(p_bull_id INTEGER) OWNER TO postgres;
-ALTER FUNCTION "db_Sirel".FNI_BULLETIN( CHARACTER VARYING(100),
-                                        CHARACTER VARYING(100),
-                                        TEXT,
-                                        TEXT,
-                                        DATE,
-                                        DATE,
-                                        BOOLEAN,
-                                        CHARACTER VARYING(100)
+-- =============================================
+-- FUNCTION: "db_Sirel".FNU_BULLETIN_ORDER
+-- =============================================
+CREATE OR REPLACE FUNCTION "db_Sirel".FNU_BULLETIN_ORDER(p_data JSONB)
+returns varchar
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+AS $$
+BEGIN
+
+    UPDATE "db_Sirel".bulletin AS t1
+	   SET bull_order = t2.bull_order
+      FROM jsonb_to_recordset(p_data) AS t2(
+		bull_id INTEGER,
+        bull_order INTEGER
+	  )
+	  WHERE t1.bull_id = t2.bull_id;
+	RETURN 'Actualización de ordenamiento exitosa';
+
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE NOTICE 'Error inesperado en FNU_BULLETIN_ORDER: %', SQLERRM;
+		RETURN 'Error: ' || SQLERRM;
+
+END;
+$$;
+DO $$ BEGIN RAISE NOTICE 'Función creada: FNU_BULLETIN_ORDER'; END $$;
+COMMENT ON FUNCTION "db_Sirel".FNU_BULLETIN_ORDER(
+    p_data JSONB
+)
+IS 'Inserta uno o múltiples registros en la tabla bulletin_authorization a partir de un arreglo del tipo compuesto bulletin_order_type.
+Parámetros:
+  - p_bulletin_auth: Arreglo de tipo "db_Sirel".bulletin_order_type que contiene los campos bull_id, bull_order.
+Excepciones controladas:
+  - foreign_key_violation: Se lanza si algún valor de id_area o bull_id no existe en sus respectivos catálogos.
+  - unique_violation: Se lanza si se intenta insertar una combinación duplicada de la llave primaria (bull_id, id_area).
+  - OTHERS: Captura cualquier otro error inesperado durante la ejecución.
+Autor: vhcruz
+Fecha de creación: 2026-04-30';
+
+ALTER FUNCTION "db_Sirel".FNS_BULLETINS(p_bull_id INTEGER, p_bull_status BOOLEAN, p_user character varying) OWNER TO postgres;
+ALTER FUNCTION "db_Sirel".FNI_BULLETIN( CHARACTER VARYING(100),CHARACTER VARYING(100),
+                                        TEXT,TEXT,DATE,DATE,BOOLEAN,CHARACTER VARYING(100)
                                       ) OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".FNI_BULLETIN_RESOURCES(p_data JSONB) OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".FNI_BULLETIN_SECTIONS(p_data JSON) OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".FNS_BULL_SECTIONS(p_bull_id INTEGER) OWNER TO postgres;
-ALTER FUNCTION "db_Sirel".FNS_BULLETINES_BYWORD(keyword character varying) OWNER TO postgres;
+ALTER FUNCTION "db_Sirel".FNS_BULLETINES_BYWORD(keyword character varying,  p_user character varying) OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".FNU_BULLETIN(integer, character varying, character varying, text, text, date, date, boolean, character varying)
     OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".FNU_SECTION_RESOURCES(p_data JSONB) OWNER TO postgres;
 ALTER FUNCTION "db_Sirel".FNU_BULLETIN_SECTIONS(p_sections "db_Sirel".section_input_type[]) OWNER TO postgres;
+ALTER FUNCTION "db_Sirel".FNU_BULLETIN_ORDER OWNER TO postgres;
+

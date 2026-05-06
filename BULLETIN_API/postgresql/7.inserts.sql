@@ -1,20 +1,21 @@
 
-INSERT INTO "db_Sirel".bulletin(bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini, bull_active_end, bull_status, updated_by)
-	VALUES ('Boletín 1', 'Acro1', 'Descripcion del boletin', 'servidor/ruta/imagen1.png','1/05/2026','30-05-2026',true, 'vhcruz');
-INSERT INTO "db_Sirel".bulletin(bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini, bull_active_end, bull_status, updated_by)
-	VALUES ('Boletín 2', 'Acro2', 'Descripcion del boletin', 'servidor/ruta/imagen2.png','1-05-2026','30-05-2026', true, 'vhcruz');
-INSERT INTO "db_Sirel".bulletin(bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini, bull_active_end, bull_status, updated_by)
-	VALUES ('Boletín 3', 'Acro3', 'Descripcion del boletin', 'servidor/ruta/imagen1.png','1-05-2026','30-05-2026',true, 'vhcruz');
-INSERT INTO "db_Sirel".bulletin(bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini, bull_active_end, bull_status, updated_by)
-	VALUES ('Boletín 4', 'Acro4', 'Descripcion del boletin', 'servidor/ruta/imagen2.png','1-05-2026','30-05-2026', true, 'vhcruz');
 
-INSERT INTO "db_Sirel".bulletin_resource(resource_desc) VALUES ('C:\Users\Hugo\Pictures\imagen1.jpg');
-INSERT INTO "db_Sirel".bulletin_resource(resource_desc) VALUES ('C:\Users\Hugo\Pictures\imagen2.jpg');
-INSERT INTO "db_Sirel".bulletin_resource(resource_desc) VALUES ('C:\Users\Hugo\Pictures\imagen3.jpg');
-INSERT INTO "db_Sirel".bulletin_resource(resource_desc) VALUES ('C:\Users\Hugo\Pictures\imagen4.jpg');
-INSERT INTO "db_Sirel".bulletin_resource(resource_desc) VALUES ('C:\Users\Hugo\Pictures\imagen5.jpg');
-INSERT INTO "db_Sirel".bulletin_resource(resource_desc) VALUES ('C:\Users\Hugo\Pictures\imagen6.jpg');
-INSERT INTO "db_Sirel".bulletin_resource(resource_desc) VALUES ('C:\Users\Hugo\Pictures\imagen7.jpg');
+INSERT INTO "db_Sirel".bulletin(bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini, bull_active_end, bull_area, bull_order, bull_shared, bull_status, updated_by)
+	VALUES ('Boletín 1', 'Acro1', 'Descripcion del boletin', 'images/Logo1.png','1/05/2026','30-05-2026', 1,1,true, true, 'vcruz');
+INSERT INTO "db_Sirel".bulletin(bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini, bull_active_end, bull_area, bull_order, bull_shared, bull_status, updated_by)
+	VALUES ('Boletín 2', 'Acro2', 'Descripcion del boletin', 'images/Logo2.png','1-05-2026','30-05-2026', 1,2,true, true, 'vcruz');
+INSERT INTO "db_Sirel".bulletin(bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini, bull_active_end, bull_area, bull_order, bull_shared, bull_status, updated_by)
+	VALUES ('Boletín 3', 'Acro3', 'Descripcion del boletin', 'images/Logo3.png','1-05-2026','30-05-2026', 1,3,true, true, 'vcruz');
+INSERT INTO "db_Sirel".bulletin(bull_name, bull_acronym, bull_desc, bull_img_path, bull_active_ini, bull_active_end, bull_area, bull_order, bull_shared, bull_status, updated_by)
+	VALUES ('Boletín 4', 'Acro4', 'Descripcion del boletin', 'images/Logo4.png','1-05-2026','30-05-2026', 1,4,true, true, 'vcruz');
+
+INSERT INTO "db_Sirel".bulletin_resource(resource_desc) VALUES ('images\section1.jpg');
+INSERT INTO "db_Sirel".bulletin_resource(resource_desc) VALUES ('images\section2.jpg');
+INSERT INTO "db_Sirel".bulletin_resource(resource_desc) VALUES ('images\section3.jpg');
+INSERT INTO "db_Sirel".bulletin_resource(resource_desc) VALUES ('images\section4.jpg');
+INSERT INTO "db_Sirel".bulletin_resource(resource_desc) VALUES ('images\section5.jpg');
+INSERT INTO "db_Sirel".bulletin_resource(resource_desc) VALUES ('images\section6.jpg');
+INSERT INTO "db_Sirel".bulletin_resource(resource_desc) VALUES ('images\section7.jpg');
 
 INSERT INTO "db_Sirel".bulletin_sections (
     section_segment, section_subsegment, section_subsegment_num, bull_id, resource_id,
@@ -174,3 +175,31 @@ INSERT INTO "db_Sirel".catalogos_jerarquia (valor) SELECT 'Desarrollo' WHERE NOT
 INSERT INTO "db_Sirel".catalogos_jerarquia (valor) SELECT 'Soporte' WHERE NOT EXISTS (
     SELECT 1 FROM "db_Sirel".catalogos_jerarquia WHERE valor = 'Soporte');
 
+
+INSERT INTO "db_Sirel".catalogos_puestos (id_puesto, valor)SELECT 1, 'puesto 1' WHERE NOT EXISTS (SELECT 1 FROM "db_Sirel".catalogos_puestos WHERE id_puesto = 1);
+INSERT INTO "db_Sirel".catalogos_puestos (id_puesto, valor)SELECT 2, 'puesto 2' WHERE NOT EXISTS (SELECT 1 FROM "db_Sirel".catalogos_puestos WHERE id_puesto = 2);
+INSERT INTO "db_Sirel".catalogos_puestos (id_puesto, valor)SELECT 3, 'puesto 3' WHERE NOT EXISTS (SELECT 1 FROM "db_Sirel".catalogos_puestos WHERE id_puesto = 3);
+
+INSERT INTO "db_Sirel".catalogos_turnos(id_turno, valor) SELECT 1, 'matutino' WHERE NOT EXISTS (SELECT 1 FROM "db_Sirel".catalogos_turnos WHERE id_turno = 1);
+INSERT INTO "db_Sirel".catalogos_turnos(id_turno, valor) SELECT 2, 'vespertino' WHERE NOT EXISTS (SELECT 1 FROM "db_Sirel".catalogos_turnos WHERE id_turno = 2);
+INSERT INTO "db_Sirel".catalogos_turnos(id_turno, valor) SELECT 3, 'nocturno' WHERE NOT EXISTS (SELECT 1 FROM "db_Sirel".catalogos_turnos WHERE id_turno = 3);
+
+
+INSERT INTO "db_Sirel".cat_estado_seguimiento(id, codigo, etiqueta, descripcion) SELECT 1, 'codigo', 'etiqueta', 'descripcion' WHERE NOT EXISTS(SELECT 1 FROM "db_Sirel".cat_estado_seguimiento WHERE id = 1);
+	
+INSERT INTO "db_Sirel".catalogos_entes(
+	id, nombre_ente, descripcion, responsable, telefono, email, direccion, puesto, area, activo, fecha_creacion, fechad_modificacion)
+VALUES (1, 'nombre_ente', 'descripcion', 'responsable', '6565265123', 'email@email.com', 'direccion', 'puesto', 'area', true, '01-01-1999', '01-01-2000');
+	
+INSERT INTO "db_Sirel".usuarios(
+	id, usuario, contrasena, nombre, ap_paterno, ap_materno, curp, id_jerarquia, id_puesto, id_turno, id_area, id_ente, estatus, fecha_ingreso, fecha_registro, fecha_modificacion, vehiculo, marca, modelo, color, placas, id_estado_seguimiento, primer_acceso)
+VALUES (1, 'vcruz', 'vcruz#1', 'Victor Hugo', 'Cruz', 'Rodriguez', 'CURV820620', 1, 1, 1, 1, 1, '1', '01-04-2026', '01-04-2026', '01-04-2026', 'vehiculo', 'marca', 'modelo', 'color', 'palca', 1, true);
+INSERT INTO "db_Sirel".usuarios(
+	id, usuario, contrasena, nombre, ap_paterno, ap_materno, curp, id_jerarquia, id_puesto, id_turno, id_area, id_ente, estatus, fecha_ingreso, fecha_registro, fecha_modificacion, vehiculo, marca, modelo, color, placas, id_estado_seguimiento, primer_acceso)
+VALUES (2, 'milla', 'milla#1', 'Milla', 'Xo', 'Xo', 'XOMILLA800564', 2, 1, 2, 2, 1, '1', '01-04-2026', '01-04-2026', '01-04-2026', 'vehiculo', 'marca', 'modelo', 'color', 'palca', 1, true);
+INSERT INTO "db_Sirel".usuarios(
+	id, usuario, contrasena, nombre, ap_paterno, ap_materno, curp, id_jerarquia, id_puesto, id_turno, id_area, id_ente, estatus, fecha_ingreso, fecha_registro, fecha_modificacion, vehiculo, marca, modelo, color, placas, id_estado_seguimiento, primer_acceso)
+VALUES (3, 'roger', 'roger#1', 'Rogelio', 'Garcia', 'Perez', 'GARP254048', 1, 1, 1, 1, 1, '1', '01-04-2026', '01-04-2026', '01-04-2026', 'vehiculo', 'marca', 'modelo', 'color', 'palca', 1, true);
+
+
+    

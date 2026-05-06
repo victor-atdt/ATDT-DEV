@@ -33,14 +33,17 @@ const {
  *           schema:
  *             type: object
  *             required:
- *               - bull_name
- *               - bull_acronym
+ *               - bulletinName
+ *               - bulletinAcronym
  *               - bull_desc
+ *               - bull_area
+ *               - bull_shared
+ *               - bull_status
  *               - image
  *             properties:
- *               bull_name:
+ *               bulletinName:
  *                 type: string
- *               bull_acronym:
+ *               bulletinAcronym:
  *                 type: string
  *               bull_desc:
  *                 type: string
@@ -50,6 +53,11 @@ const {
  *               bull_active_end:
  *                 type: string
  *                 format: date
+ *               bull_area:
+ *                 type: integer
+ *               bull_shared:
+ *                 type: boolean
+ *                 default: false
  *               bull_status:
  *                 type: boolean
  *                 default: true
@@ -89,18 +97,25 @@ router.post('/bulletin', verifyToken, upload.single('image'), createBulletin);
  *           type: string
  *           example: 'keyword'
  *         description: Bulletin keyword to filter.
+ *       - in: query
+ *         name: user
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: 'vcruz'
+ *         description: user to filter.
  *     responses:
  *       '200':
  *         description: List of bulletins retrieved successfully
  */
-router.get('/bulletins/search/:keyword', verifyToken, getBulletinsByWord)
+router.get('/bulletins/search/:keyword', verifyToken, getBulletinsByWord);
 
 /**
  * @openapi
- * /bulletins/{id}/{status}:
+ * /bulletins/{id}/{status}/{user}:
  *   get:
  *     summary: Get bulletins
- *     description: Retrieves one or all bulletins from the database via the FNS_BULLETINS function.
+ *     description: Retrieves bulletins using path parameters.
  *     tags:
  *       - Bulletins
  *     security:
@@ -110,21 +125,22 @@ router.get('/bulletins/search/:keyword', verifyToken, getBulletinsByWord)
  *         name: id
  *         required: false
  *         schema:
- *           type: integer
- *           example: 1
- *         description: Bulletin ID to filter. If omitted, returns all bulletins.
+ *           type: string
  *       - in: query
  *         name: status
  *         required: false
  *         schema:
  *           type: boolean
- *           example: true
- *         description: Bulletin ID to filter, if ommited returns all bulletins otherwise returns active or inactive bulletins.
+ *       - in: query
+ *         name: user
+ *         required: true
+ *         schema:
+ *           type: string
  *     responses:
  *       '200':
- *         description: List of bulletins retrieved successfully
+ *         description: Success
  */
-router.get('/bulletins/:id/:status', verifyToken, getBulletins);
+router.get('/bulletins/:id/:status/:user', verifyToken, getBulletins);
 
 /**
  * @openapi
@@ -391,76 +407,4 @@ router.post('/bulletin-resources', verifyToken, createBulletinResources);
  */
 router.patch('/bulletin-resources',verifyToken, updateBulletinResources);
 
-/**
- * @openapi
- * /bulletin-sections:
- *   patch:
- *     summary: Bulletin sections update (only fields selected)
- *     tags:
- *       - Sections
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - sections
- *             properties:
- *               sections:
- *                 type: array
- *                 minItems: 1
- *                 items:
- *                   type: object
- *                   required:
- *                     - section_id
- *                     - section_segment
- *                     - section_subsegment
- *                     - bull_id
- *                   properties:
- *                     section_id:
- *                       type: integer
- *                     section_segment:
- *                       type: integer
- *                     section_subsegment:
- *                       type: integer
- *                     section_subsegment_num:
- *                       type: integer
- *                     bull_id:
- *                       type: integer
- *                     resource_id:
- *                       type: integer
- *                     section_order:
- *                       type: integer
- *                     section_content:
- *                       type: string
- *                     section_format:
- *                       type: string
- *                     section_css:
- *                       type: string
- *                     section_htmltag:
- *                       type: string
- *                     section_status:
- *                       type: boolean
- *                     updated_by:
- *                       type: string
- *     responses:
- *       200:
- *         description: Todas las secciones actualizadas exitosamente
- *       207:
- *         description: Actualización parcial — algunos registros fallaron
- *       400:
- *         description: El body no es un array válido o faltan campos de PK
- *       401:
- *         description: Token no proporcionado
- *       403:
- *         description: Token inválido o expirado
- *       404:
- *         description: Ningún registro fue encontrado
- *       500:
- *         description: Error interno del servidor
- */
-router.patch('/bulletin-sections', verifyToken, updateBulletinSections);
 module.exports = router;

@@ -1,5 +1,4 @@
 
-
 -- =============================================
 -- TYPE: section_result_type
 -- =============================================
@@ -58,6 +57,9 @@ COMMENT ON TYPE "db_Sirel".section_result_type IS
     ,bull_img_path    TEXT
     ,bull_active_ini  DATE
     ,bull_active_end  DATE
+	  ,bull_area        INTEGER 
+	  ,bull_order       INTEGER 
+	  ,bull_shared      BOOLEAN 
     ,bull_status      BOOLEAN
     ,updated_by       CHARACTER VARYING(100)
     ,updated_at       TIMESTAMP WITHOUT TIME ZONE
@@ -97,7 +99,7 @@ COMMENT ON TYPE "db_Sirel".section_resource_type IS
  Define los campos que conforman un recurso (imagen o hyperlink) asociado a una sección.
  CAMPOS:
    - resource_id      (INTEGER)    : Identificador del recurso.
-   - resource_desc    (TEXT)       : Segmento principal al que pertenece la sección.'
+   - resource_desc    (TEXT)       : Segmento principal al que pertenece la sección.';
 
 DO $$
 BEGIN
@@ -148,3 +150,26 @@ COMMENT ON TYPE "db_Sirel".section_input_type IS
  NOTA:
    Cualquier modificación en este tipo requiere revisar y actualizar
    la función FNU_BULLETIN_SECTIONS para mantener la compatibilidad.';
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'bulletin_order_type') THEN
+-- =============================================
+-- TYPE: bulletin_auth_type
+-- =============================================
+	CREATE TYPE "db_Sirel".bulletin_order_type AS
+	(	
+		 bull_id INTEGER
+		,bull_order INTEGER
+	);
+    END IF;
+END
+$$;
+COMMENT ON TYPE "db_Sirel".bulletin_order_type IS 
+'Tipo de dato compuesto utilizado para dar ordenamiento en pantalla de los boletines.
+
+ CAMPOS:
+   - bull_id      (INTEGER)       : Identificador del boletín.dd
+   - bull_order   (INTEGER)       : Indica el orden en que aparecerán en pantalla.';
+  
+

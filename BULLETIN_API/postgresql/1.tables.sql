@@ -1,7 +1,7 @@
 -- =============================================
 -- TABLA: bulletin, almacena los datos de los boletines
 -- =============================================
-CREATE TABLE IF NOT EXISTS "db_Sirel"."bulletin"(
+CREATE TABLE IF NOT EXISTS "db_Sirel".bulletin(
 	 bull_id integer NOT NULL 
 	,bull_name character varying(100) NOT NULL
 	,bull_acronym character varying(100) NOT NULL
@@ -9,7 +9,10 @@ CREATE TABLE IF NOT EXISTS "db_Sirel"."bulletin"(
 	,bull_img_path TEXT NOT NULL
     ,bull_active_ini DATE
     ,bull_active_end DATE
-	,bull_status boolean DEFAULT true NOT NULL
+	,bull_area INTEGER NOT NULL REFERENCES "db_Sirel".cat_area(ID)
+	,bull_order INTEGER NOT NULL
+	,bull_shared BOOLEAN NOT NULL
+	,bull_status BOOLEAN NOT NULL
 	,updated_by character varying(100) DEFAULT 'SISTEMA'::character varying
 	,updated_at timestamp without time zone DEFAULT now()
 	,CONSTRAINT pk_bulletin          PRIMARY KEY (bull_id)
@@ -33,6 +36,12 @@ COMMENT ON COLUMN "db_Sirel"."bulletin".bull_active_ini IS
 'Fecha de inicio de vigencia del boletín. Si es NULL, el boletín no tiene fecha de inicio definida.';
 COMMENT ON COLUMN "db_Sirel"."bulletin".bull_active_end IS 
 'Fecha de fin de vigencia del boletín. Si es NULL, el boletín se considera sin fecha de expiración.';
+COMMENT ON COLUMN "db_Sirel"."bulletin".bull_area IS 
+'Área a la que pertenece un boletín';
+COMMENT ON COLUMN "db_Sirel"."bulletin".bull_order IS
+'Campo para ordenamiento en pantalla';
+COMMENT ON COLUMN "db_Sirel"."bulletin".bull_shared IS
+'Es compartido con otra área';
 COMMENT ON COLUMN "db_Sirel"."bulletin".bull_status IS 
 'Estado activo/inactivo del boletín. TRUE = activo, FALSE = inactivo. Valor por defecto: TRUE.';
 COMMENT ON COLUMN "db_Sirel"."bulletin".updated_by IS 
@@ -121,6 +130,11 @@ COMMENT ON COLUMN "db_Sirel"."bulletin_sections".updated_by IS
 COMMENT ON COLUMN "db_Sirel"."bulletin_sections".updated_at IS 
 'Fecha y hora de la última modificación del registro. Se asigna automáticamente con now() al insertar. Debe actualizarse manualmente en cada UPDATE.';
 
+
 ALTER TABLE "db_Sirel".bulletin OWNER TO postgres;
 ALTER TABLE "db_Sirel".bulletin_resource OWNER TO postgres;
 ALTER TABLE "db_Sirel".bulletin_sections OWNER TO postgres;
+
+
+
+
